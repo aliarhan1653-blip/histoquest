@@ -1,0 +1,2387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HistoQuest – Guess the Historical Figure</title>
+  <meta name="description" content="A Wordle-inspired game where you guess famous historical figures." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Cinzel:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0b0c14; --surface:#13141f; --surface2:#1a1c2e; --border:#2a2d45;
+      --accent:#7c6af7; --accent2:#a78bfa;
+      --gold:#f0c040;
+      --green:#22c55e; --green-bg:#14532d;
+      --gray:#6b7280; --gray-bg:#1f2937;
+      --daily-h:#e879f9; --daily-h-dim:rgba(232,121,249,0.15); --daily-h-border:rgba(232,121,249,0.35);
+      --daily-e:#34d399; --daily-e-dim:rgba(52,211,153,0.12); --daily-e-border:rgba(52,211,153,0.35);
+      --text:#e8e9f3; --text-dim:#9094b8;
+      --radius:12px; --radius-sm:8px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(124,106,247,.12) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(167,139,250,.08) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+    /* ── HEADER ── */
+    header{position:relative;z-index:10;padding:16px 20px 12px;border-bottom:1px solid var(--border);background:rgba(11,12,20,.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .header-left{display:flex;align-items:center;flex:1;justify-content:flex-start}
+    .header-title{flex:0 1 auto;text-align:center;white-space:nowrap}
+    header h1{font-family:'Cinzel',serif;font-size:clamp(1.3rem,3.5vw,2rem);background:linear-gradient(135deg,#c4b5fd,#f0c040,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;cursor:pointer;user-select:none}
+    header p{color:var(--text-dim);font-size:.78rem;margin-top:2px}
+    .header-btn{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:var(--radius-sm);padding:7px 12px;font-family:'Outfit',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .header-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+    .header-right{display:flex;align-items:center;gap:7px;flex:1;justify-content:flex-end}
+
+    /* ── APP ── */
+    .app{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:20px 14px 80px}
+
+    /* ── MODE SCREEN ── */
+    #modeScreen{display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:30px}
+    .mode-hero{text-align:center}
+    .mode-hero h2{font-family:'Cinzel',serif;font-size:clamp(1.1rem,2.8vw,1.7rem);color:var(--accent2);margin-bottom:7px}
+    .mode-hero p{color:var(--text-dim);max-width:520px;line-height:1.6;font-size:.88rem}
+    .mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:860px}
+    .mode-card.custom{grid-column:1/-1}
+
+    .mode-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px 24px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+    .mode-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.03));pointer-events:none}
+    .mode-card:hover{transform:translateY(-5px);border-color:var(--accent);box-shadow:0 14px 44px rgba(124,106,247,.28)}
+    .mode-card .icon{font-size:2.4rem;margin-bottom:10px}
+    .mode-card h3{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+    .mode-card p{color:var(--text-dim);font-size:.8rem;line-height:1.5}
+    .tries-badge{display:inline-block;margin-top:12px;padding:3px 11px;border-radius:999px;font-size:.74rem;font-weight:600}
+    .mode-card.easy .tries-badge{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+    .mode-card.hard{border-color:rgba(240,192,64,.2)}.mode-card.hard .tries-badge{background:rgba(240,192,64,.12);color:var(--gold);border:1px solid rgba(240,192,64,.3)}
+    .mode-card.hard:hover{border-color:var(--gold);box-shadow:0 14px 44px rgba(240,192,64,.18)}
+    .mode-card.daily-h{border-color:var(--daily-h-border)}.mode-card.daily-h .tries-badge{background:var(--daily-h-dim);color:var(--daily-h);border:1px solid var(--daily-h-border)}
+    .mode-card.daily-h:hover{border-color:var(--daily-h);box-shadow:0 14px 44px rgba(232,121,249,.22)}
+    .mode-card.daily-e{border-color:var(--daily-e-border)}.mode-card.daily-e .tries-badge{background:var(--daily-e-dim);color:var(--daily-e);border:1px solid var(--daily-e-border)}
+    .mode-card.daily-e:hover{border-color:var(--daily-e);box-shadow:0 14px 44px rgba(52,211,153,.22)}
+    .daily-played-chip{display:none;margin-top:8px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green);border-radius:999px;font-size:.72rem;font-weight:600;padding:2px 9px}
+    .daily-played-chip.show{display:inline-block}
+
+    /* Streak bar */
+    .streak-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .streak-chip{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 18px;text-align:center;min-width:80px}
+    .sc-val{font-size:1.5rem;font-weight:800;color:var(--gold)}
+    .sc-label{font-size:.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+    /* ── GAME ── */
+    #gameScreen{display:none}
+    .game-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+    .mode-badge{padding:5px 13px;border-radius:999px;font-size:.8rem;font-weight:600;border:1px solid}
+    .mode-badge.easy{background:rgba(34,197,94,.1);color:var(--green);border-color:rgba(34,197,94,.3)}
+    .mode-badge.hard{background:rgba(240,192,64,.1);color:var(--gold);border-color:rgba(240,192,64,.3)}
+    .mode-badge.daily-h{background:var(--daily-h-dim);color:var(--daily-h);border-color:var(--daily-h-border)}
+    .mode-badge.daily-e{background:var(--daily-e-dim);color:var(--daily-e);border-color:var(--daily-e-border)}
+    .tries-counter{font-size:.86rem;color:var(--text-dim)}.tries-counter span{color:var(--text);font-weight:700;font-size:.98rem}
+
+    /* Input */
+    .input-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;position:relative}
+    .input-section label{display:block;font-size:.78rem;color:var(--text-dim);margin-bottom:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+    .input-row{display:flex;gap:9px}
+    #guessInput{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Outfit',sans-serif;font-size:.95rem;padding:10px 14px;outline:none;transition:border-color .2s}
+    #guessInput:focus{border-color:var(--accent)}
+    #guessInput::placeholder{color:var(--text-dim)}
+    .guess-btn{background:linear-gradient(135deg,var(--accent),#6d59f5);border:none;border-radius:var(--radius-sm);color:#fff;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:600;padding:10px 20px;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .guess-btn:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(124,106,247,.4)}
+    .guess-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+    .autocomplete-box{position:absolute;top:calc(100% - 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:100;max-height:240px;overflow-y:auto;display:none}
+    .autocomplete-item{padding:9px 14px;cursor:pointer;font-size:.9rem;transition:background .15s}
+    .autocomplete-item:hover,.autocomplete-item.active{background:rgba(124,106,247,.15)}
+
+    /* Grid */
+    .columns-header{display:grid;grid-template-columns:var(--gtc, 2.2fr .9fr 1.3fr 1.2fr 1.3fr 1.1fr 1.4fr);gap:5px;margin-bottom:7px;padding:0 3px}
+    .col-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim);text-align:center}
+    .col-label:first-child{text-align:left}
+    #guessBoard{display:flex;flex-direction:column;gap:7px}
+    .guess-row{display:grid;grid-template-columns:var(--gtc, 2.2fr .9fr 1.3fr 1.2fr 1.3fr 1.1fr 1.4fr);gap:5px}
+    .cell{border-radius:var(--radius-sm);padding:9px 6px;text-align:center;font-size:.75rem;font-weight:600;display:flex;align-items:center;justify-content:center;min-height:50px;word-break:break-word;line-height:1.3;opacity:0;animation:flipIn .4s ease forwards;animation-delay:calc(var(--i,0)*.08s)}
+    .cell:first-child{text-align:left;justify-content:flex-start;font-size:.8rem}
+    .cell.correct{background:var(--green-bg);border:1px solid rgba(34,197,94,.4);color:#86efac}
+    .cell.wrong{background:var(--gray-bg);border:1px solid rgba(107,114,128,.35);color:#9ca3af}
+    @keyframes flipIn{0%{opacity:0;transform:rotateX(-90deg) scale(.9)}60%{transform:rotateX(10deg) scale(1.05)}100%{opacity:1;transform:rotateX(0) scale(1)}}
+
+    /* Result */
+    #resultBanner{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px 26px;text-align:center;margin-top:20px;animation:fadeUp .5s ease;scroll-margin-top:80px}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    #resultBanner.win{border-color:rgba(34,197,94,.4);background:rgba(20,83,45,.15)}
+    #resultBanner.lose{border-color:rgba(239,68,68,.3);background:rgba(127,29,29,.1)}
+    .result-emoji{font-size:2.6rem;margin-bottom:9px}
+    #resultBanner h2{font-size:1.3rem;margin-bottom:6px}
+    #resultBanner>p{color:var(--text-dim);margin-bottom:16px}
+    .result-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+    .btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:8px 18px;font-family:'Outfit',sans-serif;font-size:.86rem;cursor:pointer;transition:all .2s}
+    .btn-secondary:hover{border-color:var(--accent);color:var(--accent2)}
+    .daily-share{margin:12px 0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 15px}
+    .daily-share pre{font-family:monospace;font-size:1rem;line-height:1.5;letter-spacing:1px;white-space:pre-wrap;color:var(--text)}
+    .share-copy-btn{margin-top:9px;background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:var(--radius-sm);padding:5px 13px;font-family:'Outfit',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s}
+    .share-copy-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+
+    /* Already played */
+    #dailyAlreadyPlayed{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;text-align:center;margin-top:20px}
+    #dailyAlreadyPlayed h2{font-size:1.25rem;margin-bottom:7px}
+    #dailyAlreadyPlayed>p{color:var(--text-dim);margin-bottom:14px;font-size:.88rem}
+    .countdown-display{font-size:1.9rem;font-weight:800;color:var(--gold);margin:8px 0 16px;letter-spacing:2px;font-variant-numeric:tabular-nums}
+
+    /* ── FIGURES PANEL ── */
+    #listPanel{position:fixed;top:0;right:-440px;width:440px;height:100vh;background:var(--surface);border-left:1px solid var(--border);z-index:200;transition:right .35s cubic-bezier(.34,1.56,.64,1);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.5)}
+    #listPanel.open{right:0}
+    .panel-header{padding:18px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .panel-header h2{font-size:.95rem;font-weight:700}
+    .close-panel{background:none;border:none;color:var(--text-dim);font-size:1.3rem;cursor:pointer;line-height:1;transition:color .2s}
+    .close-panel:hover{color:var(--text)}
+    .panel-toolbar{padding:10px 20px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+    .panel-toolbar input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Outfit',sans-serif;font-size:.84rem;padding:8px 12px;outline:none}
+    .panel-toolbar input:focus{border-color:var(--accent)}
+    .filter-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+    .toggle-track{width:36px;height:20px;background:var(--gray-bg);border:1px solid var(--border);border-radius:999px;position:relative;transition:background .25s,border-color .25s;flex-shrink:0}
+    .toggle-track.on{background:rgba(124,106,247,.3);border-color:var(--accent)}
+    .toggle-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--text-dim);border-radius:50%;transition:transform .25s,background .25s}
+    .toggle-track.on .toggle-thumb{transform:translateX(16px);background:var(--accent2)}
+    .filter-toggle span{font-size:.78rem;color:var(--text-dim)}
+    .filter-toggle.on span{color:var(--accent2);font-weight:600}
+    .panel-count{padding:6px 20px 2px;font-size:.7rem;color:var(--text-dim);flex-shrink:0}
+    #listLockMsg{display:none;padding:20px 22px;text-align:center;color:var(--text-dim);font-size:.85rem;line-height:1.6}
+    #listLockMsg .lock-icon{font-size:2rem;margin-bottom:8px}
+    .panel-body{flex:1;overflow-y:auto;padding:9px 20px 18px}
+    .figure-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:7px;transition:border-color .2s}
+    .figure-card:hover{border-color:var(--accent)}
+    .figure-card h3{font-size:.85rem;font-weight:700;margin-bottom:5px;color:var(--accent2);display:flex;align-items:center;gap:6px}
+    .custom-badge{font-size:.6rem;background:rgba(240,192,64,.15);border:1px solid rgba(240,192,64,.3);color:var(--gold);border-radius:4px;padding:1px 5px;font-weight:600}
+    .figure-tags{display:flex;flex-wrap:wrap;gap:3px}
+    .tag{font-size:.63rem;padding:2px 7px;border-radius:999px;background:rgba(124,106,247,.1);border:1px solid rgba(124,106,247,.18);color:var(--text-dim)}
+
+    /* Overlay */
+    #overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;opacity:0;pointer-events:none;transition:opacity .3s}
+    #overlay.active{opacity:1;pointer-events:all}
+
+    /* ── DEV & CUSTOM CONSOLES ── */
+    #devModal, #customModal {display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;background:rgba(0,0,0,.72);backdrop-filter:blur(4px)}
+    #devModal.open, #customModal.open {display:flex}
+    .dev-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:min(620px,96vw);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:fadeUp .3s ease}
+    .dev-header{padding:18px 22px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .dev-header h2{font-size:.95rem;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:7px}
+    .dev-close{background:none;border:none;color:var(--text-dim);font-size:1.3rem;cursor:pointer;transition:color .2s}
+    .dev-close:hover{color:var(--text)}
+
+    /* Dev Tabs */
+    .dev-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+    .dev-tab{padding:10px 16px;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--text-dim);border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+    .dev-tab:hover{color:var(--text)}
+    .dev-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+    .dev-tab-content{display:none;flex:1;overflow-y:auto;padding:18px 22px 22px}
+    .dev-tab-content.active{display:block}
+
+    /* Dev form elements */
+    .dev-section-title{font-size:.74rem;text-transform:uppercase;letter-spacing:.7px;color:var(--text-dim);margin-bottom:10px;font-weight:700}
+    .dev-row{display:flex;gap:7px;align-items:center;margin-bottom:7px}
+    .dev-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Outfit',sans-serif;font-size:.84rem;padding:8px 12px;outline:none;flex:1;transition:border-color .2s}
+    .dev-input:focus{border-color:var(--gold)}
+    .dev-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Outfit',sans-serif;font-size:.84rem;padding:8px 12px;outline:none;cursor:pointer;transition:border-color .2s}
+    .dev-select:focus{border-color:var(--gold)}
+    .dev-btn{background:rgba(240,192,64,.12);border:1px solid rgba(240,192,64,.3);color:var(--gold);border-radius:var(--radius-sm);padding:8px 14px;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .dev-btn:hover{background:rgba(240,192,64,.22)}
+    .dev-btn.purple{background:rgba(124,106,247,.15);border-color:rgba(124,106,247,.3);color:var(--accent2)}
+    .dev-btn.purple:hover{background:rgba(124,106,247,.25)}
+    .dev-btn.danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171}
+    .dev-btn.danger:hover{background:rgba(239,68,68,.2)}
+    .dev-btn.green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3);color:var(--green)}
+    .dev-btn.green:hover{background:rgba(34,197,94,.22)}
+    .dev-separator{border:none;border-top:1px solid var(--border);margin:14px 0}
+    .dev-info{font-size:.78rem;color:var(--text-dim);line-height:1.55}
+    .dev-info strong{color:var(--text)}
+    .dev-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+    .dev-field label{font-size:.72rem;color:var(--text-dim);display:block;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+    .dev-field input,.dev-field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Outfit',sans-serif;font-size:.84rem;padding:8px 11px;outline:none;transition:border-color .2s}
+    .dev-field input:focus,.dev-field select:focus{border-color:var(--gold)}
+
+    /* Schedule list */
+    .dev-schedule-list{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto}
+    .dev-schedule-item{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 11px;gap:7px}
+    .ds-date{font-size:.74rem;color:var(--text-dim);min-width:88px}
+    .ds-name{font-size:.84rem;font-weight:600;color:var(--accent2);flex:1}
+    .ds-today{font-size:.66rem;color:var(--green);font-weight:600}
+    .dev-del-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.95rem;transition:color .2s;padding:1px 3px}
+    .dev-del-btn:hover{color:#f87171}
+
+    /* Manage figures list */
+    .dev-fig-list{display:flex;flex-direction:column;gap:5px;max-height:300px;overflow-y:auto;margin-top:8px}
+    .dev-fig-item{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;gap:8px}
+    .dev-fig-name{font-size:.84rem;font-weight:600;color:var(--text);flex:1}
+    .dev-fig-meta{font-size:.7rem;color:var(--text-dim)}
+
+    /* Auth */
+    #devAuth{padding:28px 24px;display:flex;flex-direction:column;gap:13px;align-items:center;text-align:center}
+    #devAuth h3{font-size:.98rem;font-weight:700;color:var(--gold)}
+    #devAuth p{font-size:.8rem;color:var(--text-dim)}
+    #devAuthInput{width:100%;max-width:260px;text-align:center;letter-spacing:2px}
+    #devAuthError{font-size:.75rem;color:#f87171;display:none}
+
+    /* Scrollbar */
+    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+    /* Toast */
+    #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:999px;font-size:.86rem;z-index:400;transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none}
+    #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+    /* ── STATS MODAL ── */
+    #statsModal{display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(6px)}
+    #statsModal.open{display:flex}
+    .stats-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:min(680px,96vw);max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 28px 90px rgba(0,0,0,.7);animation:fadeUp .35s ease}
+    .stats-header{padding:20px 26px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .stats-header h2{font-family:'Cinzel',serif;font-size:1.15rem;font-weight:700;background:linear-gradient(135deg,#f0c040,#f97316,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px}
+    .stats-close{background:none;border:none;color:var(--text-dim);font-size:1.3rem;cursor:pointer;transition:color .2s;padding:4px}
+    .stats-close:hover{color:var(--text)}
+    .stats-body{padding:26px 28px 30px;display:flex;flex-direction:column;gap:32px}
+
+    /* ── FLAME STREAK ── */
+    .flame-section{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+    .flame-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+    .flame-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
+    .flame-container{position:relative;width:110px;height:130px;display:flex;align-items:center;justify-content:center}
+
+    /* Flame layers */
+    .flame-container .flame-layer{
+      position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+      border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+      filter:blur(1px);
+      animation:flicker 1.8s ease-in-out infinite alternate;
+    }
+    .flame-container.active .flame-layer:nth-child(1){
+      width:76px;height:100px;background:radial-gradient(ellipse at 50% 80%,#ff6a00,#ee0979 60%,transparent 100%);
+      animation-delay:0s;animation-duration:1.6s;
+    }
+    .flame-container.active .flame-layer:nth-child(2){
+      width:56px;height:78px;background:radial-gradient(ellipse at 50% 80%,#ffd200,#ff6a00 60%,transparent 100%);
+      animation-delay:.2s;animation-duration:1.3s;
+    }
+    .flame-container.active .flame-layer:nth-child(3){
+      width:36px;height:54px;background:radial-gradient(ellipse at 50% 80%,#fff7aa,#ffd200 50%,transparent 100%);
+      animation-delay:.35s;animation-duration:1.1s;
+      filter:blur(0.5px);
+    }
+    /* Inactive (dim) flame */
+    .flame-container.inactive .flame-layer:nth-child(1){
+      width:76px;height:100px;background:radial-gradient(ellipse at 50% 80%,#4a1a2e,#2d0a3a 60%,transparent 100%);
+      animation-delay:0s;animation-duration:2.4s;
+      opacity:.7;
+    }
+    .flame-container.inactive .flame-layer:nth-child(2){
+      width:56px;height:78px;background:radial-gradient(ellipse at 50% 80%,#2a1540,#4a1a2e 60%,transparent 100%);
+      animation-delay:.3s;animation-duration:2s;
+      opacity:.6;
+    }
+    .flame-container.inactive .flame-layer:nth-child(3){
+      width:36px;height:54px;background:radial-gradient(ellipse at 50% 80%,#3d2060,#2a1540 50%,transparent 100%);
+      animation-delay:.5s;animation-duration:1.8s;
+      opacity:.5;
+    }
+    @keyframes flicker{
+      0%{transform:translateX(-50%) scaleX(1) scaleY(1) rotate(-1deg)}
+      25%{transform:translateX(-50%) scaleX(1.04) scaleY(1.03) rotate(1.5deg)}
+      50%{transform:translateX(-50%) scaleX(0.97) scaleY(1.05) rotate(-0.5deg)}
+      75%{transform:translateX(-50%) scaleX(1.03) scaleY(0.98) rotate(1deg)}
+      100%{transform:translateX(-50%) scaleX(0.99) scaleY(1.04) rotate(-1.5deg)}
+    }
+    .flame-number{
+      position:absolute;z-index:2;font-size:2.8rem;font-weight:800;
+      font-family:'Outfit',sans-serif;
+      text-shadow:0 0 18px rgba(0,0,0,.8),0 2px 6px rgba(0,0,0,.9);
+      letter-spacing:-1px;line-height:1;
+      bottom:18px;
+    }
+    .flame-container.active .flame-number{color:#fff7e6;text-shadow:0 0 20px #ff6a00,0 0 40px #ffd200,0 2px 6px rgba(0,0,0,.8)}
+    .flame-container.inactive .flame-number{color:#a78bfa;text-shadow:0 0 14px rgba(124,106,247,.5),0 2px 4px rgba(0,0,0,.8)}
+    .flame-sub{font-size:.68rem;color:var(--text-dim);font-weight:600;margin-top:-4px}
+    .flame-best{font-size:.72rem;font-weight:700;color:var(--gold);margin-top:2px;letter-spacing:.3px}
+    .flame-status-dot{
+      width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;
+      vertical-align:middle;
+    }
+    .flame-container.active ~ .flame-status{color:var(--green)}
+    .flame-status{font-size:.67rem;font-weight:600;letter-spacing:.3px;margin-top:1px}
+    .flame-container.inactive ~ .flame-status{color:var(--text-dim)}
+
+    /* ── STATS GRID ── */
+    .stats-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim);margin-bottom:12px}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+    .stat-tile{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center}
+    .stat-tile-val{font-size:2rem;font-weight:800;color:var(--accent2);line-height:1;margin-bottom:4px}
+    .stat-tile-val.gold{color:var(--gold)}
+    .stat-tile-val.green{color:var(--green)}
+    .stat-tile-label{font-size:.68rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+
+    /* Accuracy bar */
+    .acc-bar-wrap{margin-top:8px}
+    .acc-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+    .acc-bar-label{font-size:.75rem;color:var(--text-dim);font-weight:600;min-width:90px}
+    .acc-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+    .acc-bar-fill{height:100%;border-radius:999px;transition:width 1s cubic-bezier(.34,1.56,.64,1);min-width:4px}
+    .acc-bar-fill.hard{background:linear-gradient(90deg,#f0c040,#f97316)}
+    .acc-bar-fill.easy{background:linear-gradient(90deg,#22c55e,#34d399)}
+    .acc-bar-fill.overall{background:linear-gradient(90deg,#7c6af7,#a78bfa)}
+    .acc-pct{font-size:.78rem;font-weight:700;min-width:38px;text-align:right;color:var(--text)}
+
+    /* Share opts */
+    .stats-footer{padding:0 28px 24px;border-top:1px solid var(--border);margin-top:0}
+    .share-main-btn{width:100%;margin-top:18px;background:linear-gradient(135deg,var(--accent),#6d59f5);border:none;border-radius:var(--radius-sm);color:#fff;font-family:'Outfit',sans-serif;font-size:.92rem;font-weight:700;padding:12px 0;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.3px}
+    .share-main-btn:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(124,106,247,.45)}
+    .share-opts-panel{display:none;flex-direction:column;gap:7px;margin-top:10px;animation:fadeUp .2s ease}
+    .share-opts-panel.show{display:flex}
+    .share-opt-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:12px 16px;font-family:'Outfit',sans-serif;font-size:.86rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px;text-align:left}
+    .share-opt-btn:hover{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.08)}
+    .share-opt-icon{font-size:1.3rem;flex-shrink:0}
+    .share-opt-title{font-weight:700;font-size:.86rem}
+    .share-opt-desc{font-size:.7rem;color:var(--text-dim);margin-top:2px}
+
+    @media(max-width:720px){
+      .mode-cards{grid-template-columns:1fr}
+      .columns-header,.guess-row{grid-template-columns:var(--gtc-sm, 1.8fr .8fr 1.1fr 1fr 1.1fr .9fr 1.2fr);gap:4px}
+      .cell{font-size:.64rem;padding:7px 4px;min-height:46px}
+      .col-label{font-size:.56rem}
+      #listPanel{width:100%;right:-100%}
+      .dev-form-grid{grid-template-columns:1fr}
+      .flame-container{width:90px;height:110px}
+      .flame-number{font-size:2.2rem}
+      .stats-box{border-radius:14px}
+    }
+  </style>
+</head>
+<body>
+<div id="overlay" onclick="closePanel(); closeCustomModal()"></div>
+<div id="toast"></div>
+
+<!-- ── DEV CONSOLE ── -->
+<div id="devModal">
+  <div class="dev-box">
+    <!-- Auth gate -->
+    <div id="devAuth">
+      <h3>🔐 Developer Console</h3>
+      <p>Enter the developer password to continue.</p>
+      <input class="dev-input" id="devAuthInput" type="password" placeholder="Password…" style="max-width:260px;text-align:center;letter-spacing:2px" onkeydown="if(event.key==='Enter')devLogin()" />
+      <div id="devAuthError">❌ Incorrect password</div>
+      <button class="dev-btn" onclick="devLogin()">Unlock →</button>
+    </div>
+
+    <!-- Console -->
+    <div id="devConsole" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="dev-header">
+        <h2>⚙️ Developer Console</h2>
+        <button class="dev-close" onclick="closeDevModal()">✕</button>
+      </div>
+      <!-- Tabs -->
+      <div class="dev-tabs">
+        <div class="dev-tab active" onclick="devTab('hard-daily')"   id="tab-hard-daily">📅 Hard Daily</div>
+        <div class="dev-tab"        onclick="devTab('easy-daily')"   id="tab-easy-daily">🌿 Easy Daily</div>
+        <div class="dev-tab"        onclick="devTab('add-figure')"   id="tab-add-figure">➕ Add Figure</div>
+        <div class="dev-tab"        onclick="devTab('edit-figure')"  id="tab-edit-figure">✏️ Edit Figure</div>
+        <div class="dev-tab"        onclick="devTab('manage')"       id="tab-manage">🗂 Manage</div>
+        <div class="dev-tab"        onclick="devTab('tools')"        id="tab-tools">🛠 Tools</div>
+      </div>
+
+      <!-- TAB: Hard Daily -->
+      <div class="dev-tab-content active" id="tc-hard-daily">
+        <div class="dev-section-title">📌 Today's Hard Daily</div>
+        <p class="dev-info" id="devHardTodayInfo">—</p>
+        <hr class="dev-separator">
+        <div class="dev-section-title">Schedule Hard Daily Answer</div>
+        <div class="dev-row">
+          <input class="dev-input" id="hdDate" type="date" />
+          <button class="dev-btn purple" onclick="devHardPickRandom()">🎲 Random</button>
+        </div>
+        <div class="dev-row">
+          <input class="dev-input" id="hdFigure" placeholder="Figure name…" list="hdFigureList" />
+          <button class="dev-btn" onclick="devAddHardSchedule()">+ Schedule</button>
+        </div>
+        <datalist id="hdFigureList"></datalist>
+        <hr class="dev-separator">
+        <div class="dev-section-title">Upcoming Hard Daily Schedule</div>
+        <div class="dev-schedule-list" id="hdScheduleList"></div>
+      </div>
+
+      <!-- TAB: Easy Daily -->
+      <div class="dev-tab-content" id="tc-easy-daily">
+        <div class="dev-section-title">📌 Today's Easy Daily</div>
+        <p class="dev-info" id="devEasyTodayInfo">—</p>
+        <hr class="dev-separator">
+        <div class="dev-section-title">Schedule Easy Daily Answer</div>
+        <div class="dev-row">
+          <input class="dev-input" id="edDate" type="date" />
+          <button class="dev-btn purple" onclick="devEasyPickRandom()">🎲 Random</button>
+        </div>
+        <div class="dev-row">
+          <input class="dev-input" id="edFigure" placeholder="Figure name…" list="edFigureList" />
+          <button class="dev-btn green" onclick="devAddEasySchedule()">+ Schedule</button>
+        </div>
+        <datalist id="edFigureList"></datalist>
+        <hr class="dev-separator">
+        <div class="dev-section-title">Upcoming Easy Daily Schedule</div>
+        <div class="dev-schedule-list" id="edScheduleList"></div>
+      </div>
+
+      <!-- TAB: Add Figure -->
+      <div class="dev-tab-content" id="tc-add-figure">
+        <div class="dev-section-title">Add New Historical Figure to Database</div>
+        <div class="dev-form-grid">
+          <div class="dev-field" style="grid-column:1/-1">
+            <label>Full Name *</label>
+            <input id="nf-name" placeholder="e.g. Cleopatra VII" />
+          </div>
+          <div class="dev-field">
+            <label>Gender *</label>
+            <select id="nf-gender">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+          </div>
+          <div class="dev-field">
+            <label>Occupation *</label>
+            <select id="nf-occupation">
+              <option value="General">General</option>
+              <option value="Politician">Politician</option>
+              <option value="Scientist">Scientist</option>
+              <option value="Philosopher">Philosopher</option>
+              <option value="Explorer">Explorer</option>
+              <option value="Inventor">Inventor</option>
+              <option value="Religious Figure">Religious Figure</option>
+              <option value="Artist">Artist</option>
+              <option value="Revolutionary">Revolutionary</option>
+              <option value="Leader">Leader</option>
+              <option value="Writer">Writer</option>
+              <option value="Mathematician">Mathematician</option>
+            </select>
+          </div>
+          <div class="dev-field">
+            <label>Country / Civilization *</label>
+            <input id="nf-country" placeholder="e.g. Egypt, Ottoman Empire" />
+          </div>
+          <div class="dev-field">
+            <label>Century *</label>
+            <input id="nf-century" placeholder="e.g. 1st BC, 19th, 20th–21st" />
+          </div>
+          <div class="dev-field">
+            <label>Continent *</label>
+            <select id="nf-continent">
+              <option value="Europe">Europe</option>
+              <option value="Asia">Asia</option>
+              <option value="Africa">Africa</option>
+              <option value="North America">North America</option>
+              <option value="South America">South America</option>
+              <option value="Oceania">Oceania</option>
+            </select>
+          </div>
+          <div class="dev-field">
+            <label>Religion *</label>
+            <input id="nf-religion" placeholder="e.g. Catholic, Muslim, Pagan…" />
+          </div>
+        </div>
+        <div class="dev-row" style="margin-top:4px">
+          <button class="dev-btn green" style="flex:1" onclick="devAddFigure()">✅ Add Figure to Database</button>
+          <button class="dev-btn" onclick="devClearNewFigureForm()">Clear</button>
+        </div>
+        <p class="dev-info" style="margin-top:10px">Custom figures are saved in your browser and appear in all game modes and the figures list panel. They are marked with a <strong style="color:var(--gold)">CUSTOM</strong> badge.</p>
+      </div>
+
+      <!-- TAB: Edit Figure -->
+      <div class="dev-tab-content" id="tc-edit-figure">
+        <div class="dev-section-title">Edit Existing Figure</div>
+        <div class="dev-row">
+          <input class="dev-input" id="ef-select" placeholder="Type a figure name to load..." list="efFigureList" onchange="devLoadFigureToEdit()" />
+        </div>
+        <datalist id="efFigureList"></datalist>
+
+        <div class="dev-form-grid" id="ef-form-grid" style="display:none; margin-top:10px">
+          <div class="dev-field" style="grid-column:1/-1">
+            <label>Full Name (Read-only)</label>
+            <input id="ef-name" readonly style="opacity:0.7" />
+          </div>
+          <div class="dev-field">
+            <label>Gender *</label>
+            <select id="ef-gender">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+          </div>
+          <div class="dev-field">
+            <label>Occupation *</label>
+            <select id="ef-occupation">
+              <option value="General">General</option>
+              <option value="Politician">Politician</option>
+              <option value="Scientist">Scientist</option>
+              <option value="Philosopher">Philosopher</option>
+              <option value="Explorer">Explorer</option>
+              <option value="Inventor">Inventor</option>
+              <option value="Religious Figure">Religious Figure</option>
+              <option value="Artist">Artist</option>
+              <option value="Revolutionary">Revolutionary</option>
+              <option value="Leader">Leader</option>
+              <option value="Writer">Writer</option>
+              <option value="Mathematician">Mathematician</option>
+            </select>
+          </div>
+          <div class="dev-field">
+            <label>Country / Civilization *</label>
+            <input id="ef-country" />
+          </div>
+          <div class="dev-field">
+            <label>Century *</label>
+            <input id="ef-century" />
+          </div>
+          <div class="dev-field">
+            <label>Continent *</label>
+            <select id="ef-continent">
+              <option value="Europe">Europe</option>
+              <option value="Asia">Asia</option>
+              <option value="Africa">Africa</option>
+              <option value="North America">North America</option>
+              <option value="South America">South America</option>
+              <option value="Oceania">Oceania</option>
+            </select>
+          </div>
+          <div class="dev-field">
+            <label>Religion *</label>
+            <input id="ef-religion" />
+          </div>
+        </div>
+        <div class="dev-row" id="ef-actions" style="display:none; margin-top:4px">
+          <button class="dev-btn green" style="flex:1" onclick="devSaveFigureEdit()">✅ Save Changes</button>
+          <button class="dev-btn" onclick="devResetEditForm()">Cancel</button>
+        </div>
+        <p class="dev-info" style="margin-top:10px">Changes to built-in figures are saved to your browser. Use the <strong>Export Patched DB</strong> tool to generate source code for the main file.</p>
+      </div>
+
+      <!-- TAB: Manage Figures -->
+      <div class="dev-tab-content" id="tc-manage">
+        <div class="dev-section-title">Database Summary</div>
+        <p class="dev-info" id="devManageSummary">—</p>
+        <hr class="dev-separator">
+        <div class="dev-section-title">Custom Figures <span id="customFigureCount" style="color:var(--gold)">(0)</span></div>
+        <p class="dev-info" style="margin-bottom:8px">Built-in figures cannot be removed. Custom figures can be deleted below.</p>
+        <div class="dev-fig-list" id="devCustomFigList"></div>
+        <p class="dev-info" style="margin-top:10px" id="noCustomMsg">No custom figures added yet. Use the <strong>Add Figure</strong> tab.</p>
+      </div>
+
+      <!-- TAB: Tools -->
+      <div class="dev-tab-content" id="tc-tools">
+        <div class="dev-section-title">Export Game for Web</div>
+        <p class="dev-info" style="margin-bottom:8px">Downloads a complete <strong>histordle.html</strong> file with all your custom figures, presets, edits, and schedules hardcoded into the source. Upload this file to your web host so everyone sees your changes!</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="dev-btn purple" onclick="devExportFullGame()">💾 Export Full Game File</button>
+        </div>
+        <hr class="dev-separator">
+        <div class="dev-section-title">Reset Daily Plays</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="dev-btn" onclick="devResetToday('hard')">Reset Hard Daily</button>
+          <button class="dev-btn green" onclick="devResetToday('easy')">Reset Easy Daily</button>
+        </div>
+        <hr class="dev-separator">
+        <div class="dev-section-title">Danger Zone</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="dev-btn danger" onclick="devClearCustomFigures()">Delete All Custom Figures</button>
+          <button class="dev-btn danger" onclick="devClearAll()">Wipe All Data</button>
+        </div>
+        <hr class="dev-separator">
+        <p class="dev-info">
+          <strong>Access method:</strong> Click HISTORDLE title 7 times rapidly.<br>
+          <strong>Password:</strong> set in source code only.<br>
+          All data is stored in your browser's <strong>localStorage</strong>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CUSTOM MODAL ── -->
+<div id="customModal">
+  <div class="dev-box" style="max-width:700px">
+    <div class="dev-header">
+      <h2>✨ Custom Game Mode</h2>
+      <button class="dev-close" onclick="closeCustomModal()">✕</button>
+    </div>
+    
+    <!-- PRESET LIST -->
+    <div id="cm-list-view" style="display:flex;flex-direction:column;flex:1;overflow-y:auto;padding:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="dev-section-title" style="margin:0">Saved Presets</div>
+        <button class="dev-btn purple" onclick="openPresetBuilder()">+ Create New Preset</button>
+      </div>
+      <div id="cm-preset-list" class="dev-fig-list" style="max-height:none"></div>
+      <p id="cm-no-presets" class="dev-info" style="text-align:center;margin-top:20px;display:none">No presets found. Create one to play Custom Mode!</p>
+    </div>
+
+    <!-- PRESET BUILDER -->
+    <div id="cm-builder-view" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:20px">
+      <div class="dev-section-title">1. Preset Settings</div>
+      <div class="dev-field" style="margin-bottom:12px">
+        <label>Preset Name *</label>
+        <input id="cb-name" placeholder="e.g. My Anime Characters..." />
+      </div>
+      
+      <div class="dev-section-title">2. Custom Categories</div>
+      <p class="dev-info" style="margin-bottom:8px">Define the columns/clues for your game (e.g. Element, Weapon, Rarity). 'Name' is included automatically.</p>
+      <div id="cb-categories" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
+      <button class="dev-btn" onclick="cbAddCategory()" style="align-self:flex-start">+ Add Category</button>
+      
+      <hr class="dev-separator">
+      
+      <div class="dev-section-title">3. Add Figures</div>
+      <p class="dev-info" style="margin-bottom:8px">Add at least 3 figures to make it a game.</p>
+      
+      <div class="dev-form-grid" id="cb-figure-form"></div>
+      <button class="dev-btn green" onclick="cbAddFigure()" style="margin-top:8px;width:100%">✅ Add Figure to Preset</button>
+      
+      <div class="dev-section-title" style="margin-top:16px">Figures in this Preset (<span id="cb-fig-count">0</span>)</div>
+      <div id="cb-fig-list" class="dev-fig-list" style="margin-bottom:16px;max-height:160px"></div>
+      
+      <hr class="dev-separator">
+      <div style="display:flex;gap:10px">
+        <button class="dev-btn purple" style="flex:1;font-size:.9rem;padding:12px" onclick="cbSavePreset()">💾 Save Preset</button>
+        <button class="dev-btn" style="padding:12px" onclick="closePresetBuilder()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FIGURES PANEL ── -->
+<div id="listPanel">
+  <div class="panel-header">
+    <h2>📜 Historical Figures</h2>
+    <button class="close-panel" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-toolbar" id="panelToolbar">
+    <input type="text" id="panelSearch" placeholder="Search figures…" oninput="renderPanel()" />
+    <label class="filter-toggle" id="filterToggle" onclick="toggleSmartFilter()">
+      <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
+      <span id="filterLabel">Hide impossible figures</span>
+    </label>
+  </div>
+  <div class="panel-count" id="panelCount"></div>
+  <div id="listLockMsg">
+    <div class="lock-icon">🔒</div>
+    <strong>List Unavailable</strong><br>The figure list is not available in this mode.
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+
+<!-- ── STATS MODAL ── -->
+<div id="statsModal">
+  <div class="stats-box">
+    <div class="stats-header">
+      <h2>📊 Your Statistics</h2>
+      <button class="stats-close" onclick="closeStatsModal()">✕</button>
+    </div>
+    <div class="stats-body">
+
+      <!-- Flame Streaks -->
+      <div>
+        <div class="stats-section-title">🔥 Current Streaks</div>
+        <div class="flame-section">
+          <!-- Hard daily -->
+          <div class="flame-wrap">
+            <div class="flame-label">📅 Daily Hard</div>
+            <div class="flame-container" id="flameHard">
+              <div class="flame-layer"></div>
+              <div class="flame-layer"></div>
+              <div class="flame-layer"></div>
+              <div class="flame-number" id="flameHardNum">0</div>
+            </div>
+            <div class="flame-sub">day streak</div>
+            <div class="flame-best" id="flameHardBest">Best: 0</div>
+            <div class="flame-status" id="flameHardStatus">● Play today to keep it alive</div>
+          </div>
+          <!-- Easy daily -->
+          <div class="flame-wrap">
+            <div class="flame-label">🌿 Daily Easy</div>
+            <div class="flame-container" id="flameEasy">
+              <div class="flame-layer"></div>
+              <div class="flame-layer"></div>
+              <div class="flame-layer"></div>
+              <div class="flame-number" id="flameEasyNum">0</div>
+            </div>
+            <div class="flame-sub">day streak</div>
+            <div class="flame-best" id="flameEasyBest">Best: 0</div>
+            <div class="flame-status" id="flameEasyStatus">● Play today to keep it alive</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Win counters -->
+      <div>
+        <div class="stats-section-title">🏆 All-Time Wins</div>
+        <div class="stats-grid">
+          <div class="stat-tile"><div class="stat-tile-val gold" id="statHardWins">0</div><div class="stat-tile-label">Hard Daily Wins</div></div>
+          <div class="stat-tile"><div class="stat-tile-val green" id="statEasyWins">0</div><div class="stat-tile-label">Easy Daily Wins</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="statHardPlayed">0</div><div class="stat-tile-label">Hard Daily Played</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="statEasyPlayed">0</div><div class="stat-tile-label">Easy Daily Played</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="statFreeWins">0</div><div class="stat-tile-label">Free Mode Wins</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="statFreePlayed">0</div><div class="stat-tile-label">Free Mode Played</div></div>
+        </div>
+      </div>
+
+      <!-- Accuracy -->
+      <div>
+        <div class="stats-section-title">🎯 Win Accuracy</div>
+        <div class="acc-bar-wrap">
+          <div class="acc-bar-row">
+            <div class="acc-bar-label">Daily Hard</div>
+            <div class="acc-bar-track"><div class="acc-bar-fill hard" id="accHardBar" style="width:0%"></div></div>
+            <div class="acc-pct" id="accHardPct">—</div>
+          </div>
+          <div class="acc-bar-row">
+            <div class="acc-bar-label">Daily Easy</div>
+            <div class="acc-bar-track"><div class="acc-bar-fill easy" id="accEasyBar" style="width:0%"></div></div>
+            <div class="acc-pct" id="accEasyPct">—</div>
+          </div>
+          <div class="acc-bar-row">
+            <div class="acc-bar-label">Free Mode</div>
+            <div class="acc-bar-track"><div class="acc-bar-fill overall" id="accFreeBar" style="width:0%"></div></div>
+            <div class="acc-pct" id="accFreePct">—</div>
+          </div>
+          <div class="acc-bar-row" style="margin-top:6px;border-top:1px solid var(--border);padding-top:10px">
+            <div class="acc-bar-label" style="color:var(--text);font-weight:700">Overall</div>
+            <div class="acc-bar-track"><div class="acc-bar-fill overall" id="accOverallBar" style="width:0%"></div></div>
+            <div class="acc-pct" id="accOverallPct" style="color:var(--accent2);font-weight:800">—</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Share footer -->
+    <div class="stats-footer">
+      <button class="share-main-btn" onclick="toggleShareOpts()">📤 Share Stats</button>
+      <div class="share-opts-panel" id="shareOptsPanel">
+        <button class="share-opt-btn" onclick="downloadStatsImage()">
+          <span class="share-opt-icon">💾</span>
+          <div>
+            <div class="share-opt-title">Download Image</div>
+            <div class="share-opt-desc">Save your stats as a beautiful PNG card</div>
+          </div>
+        </button>
+        <button class="share-opt-btn" onclick="copyStatsLink()">
+          <span class="share-opt-icon">🔗</span>
+          <div>
+            <div class="share-opt-title">Copy Shareable Link</div>
+            <div class="share-opt-desc">Anyone with this file can open the link to view your stats</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-left">
+    <button class="header-btn" id="menuBtn" onclick="returnToMenu()" style="visibility:hidden">← Menu</button>
+  </div>
+  <div class="header-title">
+    <h1 id="mainTitle" onclick="titleClick()">HISTOQUEST</h1>
+    <p>Guess the historical figure from the clues</p>
+  </div>
+  <div class="header-right">
+    <button class="header-btn" id="statsBtn" onclick="openStatsModal()">📊 Stats</button>
+    <button class="header-btn" id="listBtn" onclick="openPanel()">📜 Figures</button>
+  </div>
+</header>
+
+<!-- ── APP ── -->
+<div class="app">
+  <!-- MODE SCREEN -->
+  <div id="modeScreen">
+    <div class="mode-hero">
+      <h2>Choose Your Difficulty</h2>
+      <p>A historical figure is randomly chosen each game. Guess their identity — 🟩 green means correct, ⬜ gray means wrong.</p>
+    </div>
+    <div class="streak-row" id="streakRow" style="display:none">
+      <div class="streak-chip"><div class="sc-val" id="scStrH">0</div><div class="sc-label">🔥 Hard Streak</div></div>
+      <div class="streak-chip"><div class="sc-val" id="scBstH">0</div><div class="sc-label">🏆 Hard Best</div></div>
+      <div class="streak-chip"><div class="sc-val" id="scStrE">0</div><div class="sc-label">🌿 Easy Streak</div></div>
+      <div class="streak-chip"><div class="sc-val" id="scBstE">0</div><div class="sc-label">🏆 Easy Best</div></div>
+    </div>
+    <div class="mode-cards">
+      <div class="mode-card easy"    onclick="startGame('easy')"    id="easyCard"    tabindex="0" role="button">
+        <div class="icon">🏛️</div><h3>Easy</h3>
+        <p>Figure list + smart filter. All figures in the pool.</p>
+        <div class="tries-badge">10 Tries</div>
+      </div>
+      <div class="mode-card hard"    onclick="startGame('hard')"    id="hardCard"    tabindex="0" role="button">
+        <div class="icon">⚔️</div><h3>Hard</h3>
+        <p>No list. Pure knowledge. Random figure from all.</p>
+        <div class="tries-badge">5 Tries</div>
+      </div>
+      <div class="mode-card daily-e" onclick="startDailyMode('easy')" id="dailyECard" tabindex="0" role="button">
+        <div class="icon">🌿</div><h3>Daily Easy</h3>
+        <p>Once a day. Full database. Figure list available.</p>
+        <div class="tries-badge">10 Tries</div>
+        <div class="daily-played-chip" id="chipDE">✓ Played Today</div>
+      </div>
+      <div class="mode-card daily-h" onclick="startDailyMode('hard')" id="dailyHCard" tabindex="0" role="button">
+        <div class="icon">📅</div><h3>Daily Hard</h3>
+        <p>Once a day. Harder figures. No list. Come back tomorrow!</p>
+        <div class="tries-badge">7 Tries</div>
+        <div class="daily-played-chip" id="chipDH">✓ Played Today</div>
+      </div>
+      <div class="mode-card custom" onclick="openCustomModal()" id="customCard" tabindex="0" role="button" style="border-color:rgba(124,106,247,.3)">
+        <div class="icon">✨</div><h3 style="color:var(--accent2)">Custom</h3>
+        <p>Create and play your own presets with custom categories!</p>
+        <div class="tries-badge" style="background:rgba(124,106,247,.1);color:var(--accent2);border:1px solid rgba(124,106,247,.3)">Play Presets</div>
+      </div>
+    </div>
+  </div>
+  
+  <footer style="position:fixed; bottom:10px; left:14px; font-size:0.7rem; color:var(--text-dim); z-index:50;">
+    Found a bug or have a suggestion?<br>
+    Email: <a href="mailto:histoquest.feedback@gmail.com" style="color:var(--accent2);text-decoration:none">histoquest.feedback@gmail.com</a>
+  </footer>
+
+  <!-- GAME SCREEN -->
+  <div id="gameScreen">
+    <div class="game-meta">
+      <div id="modeBadge" class="mode-badge"></div>
+      <div class="tries-counter">Tries left: <span id="triesLeft"></span></div>
+      <div class="tries-counter" id="triesUsedDisplay"></div>
+    </div>
+
+    <div class="input-section" id="inputSection">
+      <label>Type a historical figure's name:</label>
+      <div class="input-row">
+        <div style="position:relative;flex:1">
+          <input type="text" id="guessInput" placeholder="e.g. Julius Caesar…" autocomplete="off"
+                 oninput="onInputChange()" onkeydown="onInputKeyDown(event)" />
+          <div class="autocomplete-box" id="autocomplete"></div>
+        </div>
+        <button class="guess-btn" id="guessBtn" onclick="submitGuess()">Guess →</button>
+      </div>
+    </div>
+
+    <!-- Already played (daily) -->
+    <div id="dailyAlreadyPlayed">
+      <h2 id="dapTitle"></h2>
+      <p id="dapMsg"></p>
+      <div class="countdown-display" id="countdownDisplay"></div>
+      <div class="daily-share" id="dapShareBox" style="display:none">
+        <pre id="dapShareText"></pre>
+        <button class="share-copy-btn" onclick="copyShare('already')">📋 Copy to clipboard</button>
+      </div>
+      <div class="result-actions" style="margin-top:12px">
+        <button class="btn-secondary" onclick="returnToMenu()">← Back to Menu</button>
+      </div>
+    </div>
+
+    <div class="columns-header" id="colHeader"></div>
+    <div id="guessBoard"></div>
+
+    <div id="resultBanner">
+      <div class="result-emoji" id="resultEmoji"></div>
+      <h2 id="resultTitle"></h2>
+      <p id="resultMsg"></p>
+      <div class="daily-share" id="resultShareBox" style="display:none">
+        <pre id="resultShareText"></pre>
+        <button class="share-copy-btn" onclick="copyShare('result')">📋 Copy result</button>
+      </div>
+      <div class="result-actions" id="resultActions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════════════════════════
+const HC_CUSTOM_FIGURES = [];
+const HC_SCHED_EASY = {};
+const HC_SCHED_HARD = {};
+const HC_PRESETS = [];
+
+const BUILTIN_FIGURES = [
+  {name:"Napoleon Bonaparte",     gender:"Male",   country:"France",          century:"18th–19th",   occupation:"General",         continent:"Europe",        religion:"Catholic"},
+  {name:"Hannibal Barca",         gender:"Male",   country:"Carthage",        century:"3rd BC",       occupation:"General",         continent:"Africa",        religion:"Pagan"},
+  {name:"George Washington",      gender:"Male",   country:"United States",   century:"18th",         occupation:"Politician",      continent:"North America", religion:"Christian"},
+  {name:"Winston Churchill",      gender:"Male",   country:"United Kingdom",  century:"20th",         occupation:"Politician",      continent:"Europe",        religion:"Christian"},
+  {name:"Albert Einstein",        gender:"Male",   country:"Germany",         century:"19th–20th",    occupation:"Scientist",       continent:"Europe",        religion:"Jewish"},
+  {name:"Marie Curie",            gender:"Female", country:"Poland/France",   century:"19th–20th",    occupation:"Scientist",       continent:"Europe",        religion:"Catholic"},
+  {name:"Socrates",               gender:"Male",   country:"Greece",          century:"5th BC",       occupation:"Philosopher",     continent:"Europe",        religion:"Pagan"},
+  {name:"Confucius",              gender:"Male",   country:"China",           century:"6th–5th BC",   occupation:"Philosopher",     continent:"Asia",          religion:"Chinese Folk Religion"},
+  {name:"Christopher Columbus",   gender:"Male",   country:"Spain",           century:"15th",         occupation:"Explorer",        continent:"Europe",        religion:"Catholic"},
+  {name:"Zheng He",               gender:"Male",   country:"China",           century:"15th",         occupation:"Explorer",        continent:"Asia",          religion:"Muslim"},
+  {name:"Nikola Tesla",           gender:"Male",   country:"Serbia",          century:"19th–20th",    occupation:"Inventor",        continent:"Europe",        religion:"Orthodox Christian"},
+  {name:"Thomas Edison",          gender:"Male",   country:"United States",   century:"19th–20th",    occupation:"Inventor",        continent:"North America", religion:"Christian"},
+  {name:"Martin Luther",          gender:"Male",   country:"Germany",         century:"16th",         occupation:"Religious Figure",continent:"Europe",        religion:"Christian"},
+  {name:"Muhammad",               gender:"Male",   country:"Arabia",          century:"7th",          occupation:"Religious Figure",continent:"Asia",          religion:"Muslim"},
+  {name:"Leonardo da Vinci",      gender:"Male",   country:"Italy",           century:"15th–16th",    occupation:"Artist",          continent:"Europe",        religion:"Catholic"},
+  {name:"Vincent van Gogh",       gender:"Male",   country:"Netherlands",     century:"19th",         occupation:"Artist",          continent:"Europe",        religion:"Christian"},
+  {name:"Che Guevara",            gender:"Male",   country:"Argentina",       century:"20th",         occupation:"Revolutionary",   continent:"South America", religion:"Atheist"},
+  {name:"Toussaint Louverture",   gender:"Male",   country:"Haiti",           century:"18th–19th",    occupation:"Revolutionary",   continent:"North America", religion:"Christian"},
+  {name:"Akbar the Great",        gender:"Male",   country:"Mughal Empire",   century:"16th",         occupation:"Leader",          continent:"Asia",          religion:"Muslim"},
+  {name:"Mao Zedong",             gender:"Male",   country:"China",           century:"20th",         occupation:"Leader",          continent:"Asia",          religion:"Atheist"},
+  {name:"Adolf Hitler",           gender:"Male",   country:"Germany",         century:"20th",         occupation:"Leader",          continent:"Europe",        religion:"Christian"},
+  {name:"Joseph Stalin",          gender:"Male",   country:"Soviet Union",    century:"20th",         occupation:"Leader",          continent:"Europe",        religion:"Atheist"},
+  {name:"Dwight D. Eisenhower",   gender:"Male",   country:"United States",   century:"20th",         occupation:"General",         continent:"North America", religion:"Christian"},
+  {name:"Erwin Rommel",           gender:"Male",   country:"Germany",         century:"20th",         occupation:"General",         continent:"Europe",        religion:"Christian"},
+  {name:"Franklin D. Roosevelt",  gender:"Male",   country:"United States",   century:"20th",         occupation:"Politician",      continent:"North America", religion:"Christian"},
+  {name:"Margaret Thatcher",      gender:"Female", country:"United Kingdom",  century:"20th",         occupation:"Politician",      continent:"Europe",        religion:"Christian"},
+  {name:"Stephen Hawking",        gender:"Male",   country:"United Kingdom",  century:"20th–21st",    occupation:"Scientist",       continent:"Europe",        religion:"Atheist"},
+  {name:"Galileo Galilei",        gender:"Male",   country:"Italy",           century:"16th–17th",    occupation:"Scientist",       continent:"Europe",        religion:"Catholic"},
+  {name:"Plato",                  gender:"Male",   country:"Greece",          century:"4th BC",       occupation:"Philosopher",     continent:"Europe",        religion:"Pagan"},
+  {name:"Aristotle",              gender:"Male",   country:"Greece",          century:"4th BC",       occupation:"Philosopher",     continent:"Europe",        religion:"Pagan"},
+  {name:"Ferdinand Magellan",     gender:"Male",   country:"Portugal",        century:"16th",         occupation:"Explorer",        continent:"Europe",        religion:"Catholic"},
+  {name:"Neil Armstrong",         gender:"Male",   country:"United States",   century:"20th",         occupation:"Explorer",        continent:"North America", religion:"Christian"},
+  {name:"Alan Turing",            gender:"Male",   country:"United Kingdom",  century:"20th",         occupation:"Inventor",        continent:"Europe",        religion:"Atheist"},
+  {name:"Alexander Graham Bell",  gender:"Male",   country:"United Kingdom",  century:"19th–20th",    occupation:"Inventor",        continent:"Europe",        religion:"Christian"},
+  {name:"Pope John Paul II",      gender:"Male",   country:"Poland",          century:"20th–21st",    occupation:"Religious Figure",continent:"Europe",        religion:"Catholic"},
+  {name:"Dalai Lama",             gender:"Male",   country:"Tibet",           century:"20th–21st",    occupation:"Religious Figure",continent:"Asia",          religion:"Buddhist"},
+  {name:"Pablo Picasso",          gender:"Male",   country:"Spain",           century:"19th–20th",    occupation:"Artist",          continent:"Europe",        religion:"Catholic"},
+  {name:"William Shakespeare",    gender:"Male",   country:"England",         century:"16th–17th",    occupation:"Artist",          continent:"Europe",        religion:"Christian"},
+  {name:"Vladimir Lenin",         gender:"Male",   country:"Russia",          century:"20th",         occupation:"Revolutionary",   continent:"Europe",        religion:"Atheist"},
+  {name:"Mahatma Gandhi",         gender:"Male",   country:"India",           century:"19th–20th",    occupation:"Revolutionary",   continent:"Asia",          religion:"Hindu"},
+  {name:"Julius Caesar",          gender:"Male",   country:"Rome",            century:"1st BC",       occupation:"General",         continent:"Europe",        religion:"Pagan"},
+  {name:"George S. Patton",       gender:"Male",   country:"United States",   century:"20th",         occupation:"General",         continent:"North America", religion:"Christian"},
+  {name:"John F. Kennedy",        gender:"Male",   country:"United States",   century:"20th",         occupation:"Politician",      continent:"North America", religion:"Catholic"},
+  {name:"Theodore Roosevelt",     gender:"Male",   country:"United States",   century:"19th–20th",    occupation:"Politician",      continent:"North America", religion:"Christian"},
+  {name:"Isaac Newton",           gender:"Male",   country:"England",         century:"17th–18th",    occupation:"Scientist",       continent:"Europe",        religion:"Christian"},
+  {name:"Charles Darwin",         gender:"Male",   country:"United Kingdom",  century:"19th",         occupation:"Scientist",       continent:"Europe",        religion:"Christian"},
+  {name:"Diogenes",               gender:"Male",   country:"Greece",          century:"4th BC",       occupation:"Philosopher",     continent:"Europe",        religion:"Pagan"},
+  {name:"Sun Tzu",                gender:"Male",   country:"China",           century:"5th BC",       occupation:"Philosopher",     continent:"Asia",          religion:"Chinese Folk Religion"},
+  {name:"Vasco da Gama",          gender:"Male",   country:"Portugal",        century:"15th–16th",    occupation:"Explorer",        continent:"Europe",        religion:"Catholic"},
+  {name:"Roald Amundsen",         gender:"Male",   country:"Norway",          century:"19th–20th",    occupation:"Explorer",        continent:"Europe",        religion:"Christian"},
+  {name:"Louis Pasteur",          gender:"Male",   country:"France",          century:"19th",         occupation:"Inventor",        continent:"Europe",        religion:"Catholic"},
+  {name:"Johannes Gutenberg",     gender:"Male",   country:"Germany",         century:"15th",         occupation:"Inventor",        continent:"Europe",        religion:"Christian"},
+  {name:"Martin Luther King Jr.", gender:"Male",   country:"United States",   century:"20th",         occupation:"Religious Figure",continent:"North America", religion:"Christian"},
+  {name:"Pope Urban II",          gender:"Male",   country:"Papal States",    century:"11th",         occupation:"Religious Figure",continent:"Europe",        religion:"Catholic"},
+  {name:"Michelangelo",           gender:"Male",   country:"Italy",           century:"15th–16th",    occupation:"Artist",          continent:"Europe",        religion:"Catholic"},
+  {name:"Wolfgang Amadeus Mozart",gender:"Male",   country:"Austria",         century:"18th",         occupation:"Artist",          continent:"Europe",        religion:"Catholic"},
+  {name:"Simon Bolivar",          gender:"Male",   country:"Gran Colombia",   century:"19th",         occupation:"Revolutionary",   continent:"South America", religion:"Catholic"},
+  {name:"Emiliano Zapata",        gender:"Male",   country:"Mexico",          century:"20th",         occupation:"Revolutionary",   continent:"North America", religion:"Catholic"},
+  {name:"Genghis Khan",           gender:"Male",   country:"Mongolia",        century:"12th–13th",    occupation:"Leader",          continent:"Asia",          religion:"Tengrism"},
+  {name:"Alexander the Great",    gender:"Male",   country:"Macedon",         century:"4th BC",       occupation:"Leader",          continent:"Europe",        religion:"Pagan"},
+  {name:"Abraham Lincoln",        gender:"Male",   country:"United States",   century:"19th",         occupation:"Politician",      continent:"North America", religion:"Christian"},
+  {name:"Nelson Mandela",         gender:"Male",   country:"South Africa",    century:"20th–21st",    occupation:"Politician",      continent:"Africa",        religion:"Christian"},
+  {name:"Niels Bohr",             gender:"Male",   country:"Denmark",         century:"20th",         occupation:"Scientist",       continent:"Europe",        religion:"Christian"},
+  {name:"Michael Faraday",        gender:"Male",   country:"United Kingdom",  century:"19th",         occupation:"Scientist",       continent:"Europe",        religion:"Christian"},
+  {name:"René Descartes",         gender:"Male",   country:"France",          century:"17th",         occupation:"Philosopher",     continent:"Europe",        religion:"Catholic"},
+  {name:"John Locke",             gender:"Male",   country:"England",         century:"17th",         occupation:"Philosopher",     continent:"Europe",        religion:"Christian"},
+  {name:"James Cook",             gender:"Male",   country:"United Kingdom",  century:"18th",         occupation:"Explorer",        continent:"Europe",        religion:"Christian"},
+  {name:"Ibn Battuta",            gender:"Male",   country:"Morocco",         century:"14th",         occupation:"Explorer",        continent:"Africa",        religion:"Muslim"},
+  {name:"Wright Brothers",        gender:"Male",   country:"United States",   century:"20th",         occupation:"Inventor",        continent:"North America", religion:"Christian"},
+  {name:"Johannes Kepler",        gender:"Male",   country:"Germany",         century:"16th–17th",    occupation:"Inventor",        continent:"Europe",        religion:"Christian"},
+  {name:"Buddha",                 gender:"Male",   country:"India",           century:"6th–5th BC",   occupation:"Religious Figure",continent:"Asia",          religion:"Buddhist"},
+  {name:"Thomas Aquinas",         gender:"Male",   country:"Italy",           century:"13th",         occupation:"Religious Figure",continent:"Europe",        religion:"Catholic"},
+  {name:"Ludwig van Beethoven",   gender:"Male",   country:"Germany",         century:"18th–19th",    occupation:"Artist",          continent:"Europe",        religion:"Christian"},
+  {name:"Rembrandt",              gender:"Male",   country:"Netherlands",     century:"17th",         occupation:"Artist",          continent:"Europe",        religion:"Christian"},
+  {name:"Thomas Jefferson",       gender:"Male",   country:"United States",   century:"18th–19th",    occupation:"Revolutionary",   continent:"North America", religion:"Christian"},
+  {name:"Ho Chi Minh",            gender:"Male",   country:"Vietnam",         century:"20th",         occupation:"Revolutionary",   continent:"Asia",          religion:"Atheist"},
+  {name:"Mustafa Kemal Atatürk",  gender:"Male",   country:"Türkiye",         century:"20th",         occupation:"Leader",          continent:"Asia",          religion:"Muslim"},
+  {name:"Catherine the Great",    gender:"Female", country:"Russia",          century:"18th",         occupation:"Leader",          continent:"Europe",        religion:"Orthodox Christian"},
+  {name:"Richard the Lionheart",  gender:"Male",   country:"England",         century:"12th",         occupation:"General",         continent:"Europe",        religion:"Catholic"},
+  {name:"Douglas MacArthur",      gender:"Male",   country:"United States",   century:"20th",         occupation:"General",         continent:"North America", religion:"Christian"},
+  {name:"Rosa Luxemburg",         gender:"Female", country:"Germany",         century:"19th–20th",    occupation:"Revolutionary",   continent:"Europe",        religion:"Jewish"},
+  {name:"Otto von Bismarck",      gender:"Male",   country:"Germany",         century:"19th",         occupation:"Politician",      continent:"Europe",        religion:"Christian"},
+  {name:"Benjamin Franklin",      gender:"Male",   country:"United States",   century:"18th",         occupation:"Politician",      continent:"North America", religion:"Christian"},
+  {name:"Carl Sagan",             gender:"Male",   country:"United States",   century:"20th",         occupation:"Scientist",       continent:"North America", religion:"Atheist"},
+  {name:"Gregor Mendel",          gender:"Male",   country:"Austria",         century:"19th",         occupation:"Scientist",       continent:"Europe",        religion:"Catholic"},
+  {name:"Voltaire",               gender:"Male",   country:"France",          century:"18th",         occupation:"Philosopher",     continent:"Europe",        religion:"Christian"},
+  {name:"Niccolò Machiavelli",    gender:"Male",   country:"Italy",           century:"15th–16th",    occupation:"Philosopher",     continent:"Europe",        religion:"Catholic"},
+  {name:"Amerigo Vespucci",       gender:"Male",   country:"Italy",           century:"15th–16th",    occupation:"Explorer",        continent:"Europe",        religion:"Catholic"},
+  {name:"David Livingstone",      gender:"Male",   country:"United Kingdom",  century:"19th",         occupation:"Explorer",        continent:"Europe",        religion:"Christian"},
+  {name:"James Watt",             gender:"Male",   country:"United Kingdom",  century:"18th–19th",    occupation:"Inventor",        continent:"Europe",        religion:"Christian"},
+  {name:"Guglielmo Marconi",      gender:"Male",   country:"Italy",           century:"19th–20th",    occupation:"Inventor",        continent:"Europe",        religion:"Catholic"},
+  {name:"John Calvin",            gender:"Male",   country:"France",          century:"16th",         occupation:"Religious Figure",continent:"Europe",        religion:"Christian"},
+  {name:"Guru Nanak",             gender:"Male",   country:"India",           century:"15th–16th",    occupation:"Religious Figure",continent:"Asia",          religion:"Sikh"},
+  {name:"Frida Kahlo",            gender:"Female", country:"Mexico",          century:"20th",         occupation:"Artist",          continent:"North America", religion:"Christian"},
+  {name:"Johann Sebastian Bach",  gender:"Male",   country:"Germany",         century:"17th–18th",    occupation:"Artist",          continent:"Europe",        religion:"Christian"},
+  {name:"Benito Mussolini",       gender:"Male",   country:"Italy",           century:"20th",         occupation:"Leader",          continent:"Europe",        religion:"Atheist"},
+  {name:"Elizabeth II",           gender:"Female", country:"United Kingdom",  century:"20th–21st",    occupation:"Leader",          continent:"Europe",        religion:"Christian"},
+  {name:"Georgy Zhukov",          gender:"Male",   country:"Soviet Union",    century:"20th",         occupation:"General",         continent:"Europe",        religion:"Orthodox Christian"},
+  {name:"Isoroku Yamamoto",       gender:"Male",   country:"Japan",           century:"20th",         occupation:"General",         continent:"Asia",          religion:"Shinto"},
+];
+
+// Hard daily pool – more obscure figures
+const HARD_DAILY_POOL = [
+  "Hannibal Barca","Toussaint Louverture","Akbar the Great","Zheng He","Erwin Rommel",
+  "Georgy Zhukov","Isoroku Yamamoto","Ferdinand Magellan","Vasco da Gama","Roald Amundsen",
+  "Ibn Battuta","Pope Urban II","Thomas Aquinas","Simon Bolivar","Emiliano Zapata",
+  "Genghis Khan","Richard the Lionheart","Rosa Luxemburg","Otto von Bismarck","Ho Chi Minh",
+  "Mustafa Kemal Atatürk","Diogenes","Sun Tzu","Johannes Kepler","Gregor Mendel",
+  "Louis Pasteur","Johannes Gutenberg","Guglielmo Marconi","Guru Nanak","John Calvin",
+  "Pope John Paul II","Niels Bohr","Michael Faraday","René Descartes","John Locke",
+  "Niccolò Machiavelli","Amerigo Vespucci","David Livingstone","James Watt","George S. Patton",
+  "Douglas MacArthur","Carl Sagan","Benjamin Franklin","Theodore Roosevelt","Rembrandt",
+  "Ludwig van Beethoven","Wolfgang Amadeus Mozart","Pablo Picasso","Frida Kahlo",
+  "Johann Sebastian Bach","Plato","Aristotle","Voltaire","Alexander Graham Bell",
+  "Alan Turing","Neil Armstrong","Stephen Hawking","Galileo Galilei","Charles Darwin",
+];
+
+const STD_ATTRS = ["gender","country","century","occupation","continent","religion"];
+let activePreset = null;
+
+function getCurrentAttrs() {
+  return activePreset ? activePreset.categories : STD_ATTRS;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CUSTOM & EDITED FIGURES (localStorage)
+// ════════════════════════════════════════════════════════════════════════════
+function getCustomFigures() {
+  let local = [];
+  try { local = JSON.parse(localStorage.getItem('histordle_custom') || '[]'); } catch {}
+  return [...HC_CUSTOM_FIGURES, ...local];
+}
+function saveCustomFigures(arr) { localStorage.setItem('histordle_custom', JSON.stringify(arr)); }
+
+function getEditedFigures() {
+  try { return JSON.parse(localStorage.getItem('histordle_edited') || '{}'); } catch { return {}; }
+}
+function saveEditedFigures(obj) { localStorage.setItem('histordle_edited', JSON.stringify(obj)); }
+
+function getAllFigures() {
+  if (activePreset) return activePreset.figures;
+  const edits = getEditedFigures();
+  const builtIn = BUILTIN_FIGURES.map(f => {
+    if (edits[f.name]) return { ...f, ...edits[f.name] };
+    return f;
+  });
+  return [...builtIn, ...getCustomFigures()];
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CUSTOM PRESETS (localStorage)
+// ════════════════════════════════════════════════════════════════════════════
+function getPresets() {
+  let local = [];
+  try { local = JSON.parse(localStorage.getItem('histordle_presets') || '[]'); } catch {}
+  return [...HC_PRESETS, ...local];
+}
+function savePresets(arr) { localStorage.setItem('histordle_presets', JSON.stringify(arr)); }
+
+function openCustomModal() {
+  document.getElementById('customModal').classList.add('open');
+  document.getElementById('overlay').classList.add('active');
+  renderPresetList();
+}
+function closeCustomModal() {
+  document.getElementById('customModal').classList.remove('open');
+  document.getElementById('overlay').classList.remove('active');
+}
+
+function renderPresetList() {
+  document.getElementById('cm-list-view').style.display = 'flex';
+  document.getElementById('cm-builder-view').style.display = 'none';
+  const list = document.getElementById('cm-preset-list');
+  const noMsg = document.getElementById('cm-no-presets');
+  const presets = getPresets();
+  list.innerHTML = '';
+  if (presets.length === 0) { noMsg.style.display = 'block'; }
+  else {
+    noMsg.style.display = 'none';
+    presets.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'dev-fig-item';
+      el.innerHTML = `
+        <div class="dev-fig-name">${p.name} <span style="font-size:.7rem;font-weight:400;color:var(--text-dim)">(${p.figures.length} figures)</span></div>
+        <button class="dev-btn green" onclick="playPreset('${p.id}')">▶ Play</button>
+        <button class="dev-btn danger" onclick="deletePreset('${p.id}')">Delete</button>
+      `;
+      list.appendChild(el);
+    });
+  }
+}
+function playPreset(id) {
+  const p = getPresets().find(x => x.id === id);
+  if (!p) return;
+  if (p.figures.length < 2) { showToast('Not enough figures in preset!'); return; }
+  activePreset = p;
+  closeCustomModal();
+  startGame('custom');
+}
+function deletePreset(id) {
+  if(!confirm('Delete this preset?')) return;
+  const p = getPresets().filter(x => x.id !== id);
+  savePresets(p);
+  renderPresetList();
+}
+
+let cbCats = [];
+let cbFigs = [];
+let cbEditId = null;
+
+function openPresetBuilder() {
+  document.getElementById('cm-list-view').style.display = 'none';
+  document.getElementById('cm-builder-view').style.display = 'flex';
+  cbEditId = 'preset-' + Date.now();
+  cbCats = ["Gender", "Element", "Weapon"];
+  cbFigs = [];
+  document.getElementById('cb-name').value = '';
+  renderCbCats();
+  renderCbForm();
+  renderCbFigs();
+}
+function closePresetBuilder() { renderPresetList(); }
+
+function renderCbCats() {
+  const cont = document.getElementById('cb-categories');
+  cont.innerHTML = '';
+  cbCats.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.style.display = 'flex'; d.style.gap = '4px';
+    const inp = document.createElement('input');
+    inp.className = 'dev-input'; inp.value = c; inp.style.width = '120px';
+    inp.oninput = (e) => { cbCats[i] = e.target.value; renderCbForm(); };
+    const btn = document.createElement('button');
+    btn.className = 'dev-del-btn'; btn.innerHTML = '✕';
+    btn.onclick = () => { cbCats.splice(i,1); renderCbCats(); renderCbForm(); };
+    d.appendChild(inp); d.appendChild(btn);
+    cont.appendChild(d);
+  });
+}
+function cbAddCategory() { cbCats.push('New Category'); renderCbCats(); renderCbForm(); }
+
+function renderCbForm() {
+  const grid = document.getElementById('cb-figure-form');
+  let html = `<div class="dev-field" style="grid-column:1/-1"><label>Name *</label><input id="cbf-name"/></div>`;
+  cbCats.forEach((c, i) => {
+    html += `<div class="dev-field"><label>${c||'Un-named Category'} *</label><input id="cbf-cat-${i}"/></div>`;
+  });
+  grid.innerHTML = html;
+}
+function cbAddFigure() {
+  const name = document.getElementById('cbf-name').value.trim();
+  if(!name) { showToast('Name required!'); return; }
+  const fig = { name };
+  for(let i=0; i<cbCats.length; i++){
+    const val = document.getElementById('cbf-cat-'+i).value.trim();
+    if(!val) { showToast('Fill all categories!'); return; }
+    fig[cbCats[i]] = val;
+  }
+  cbFigs.push(fig);
+  document.getElementById('cbf-name').value = '';
+  for(let i=0; i<cbCats.length; i++) document.getElementById('cbf-cat-'+i).value = '';
+  document.getElementById('cbf-name').focus();
+  renderCbFigs();
+}
+function renderCbFigs() {
+  document.getElementById('cb-fig-count').textContent = cbFigs.length;
+  const list = document.getElementById('cb-fig-list');
+  list.innerHTML = cbFigs.map((f,i) => `
+    <div class="dev-fig-item">
+      <div class="dev-fig-name">${f.name}</div>
+      <button class="dev-del-btn" onclick="cbFigs.splice(${i},1);renderCbFigs()">✕</button>
+    </div>
+  `).join('');
+}
+function cbSavePreset() {
+  const name = document.getElementById('cb-name').value.trim();
+  if(!name) { showToast('Preset Name required!'); return; }
+  const cleanCats = cbCats.map(c=>c.trim()).filter(Boolean);
+  if(cleanCats.length===0) { showToast('At least one category required!'); return; }
+  if(cbFigs.length<2) { showToast('Add at least 2 figures!'); return; }
+  
+  const presets = getPresets();
+  presets.push({ id: cbEditId, name, categories: cleanCats, figures: cbFigs });
+  savePresets(presets);
+  showToast('Preset saved!');
+  closePresetBuilder();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════════════
+let target = null, guesses = [], maxTries = 10, currentMode = 'easy';
+let gameOver = false, acIndex = -1, smartFilterOn = false, knownCorrect = {};
+let titleClickCount = 0, titleClickTimer = null, countdownInterval = null;
+let currentDailyType = null; // 'hard' | 'easy'
+
+const DEV_PASSWORD = "Netflix/Terim";
+
+// ════════════════════════════════════════════════════════════════════════════
+// DAILY HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getSchedule(type) {
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem(`histordle_sched_${type}`) || '{}'); } catch {}
+  const hc = type === 'hard' ? HC_SCHED_HARD : HC_SCHED_EASY;
+  return { ...hc, ...local };
+}
+function saveSchedule(type, s) { localStorage.setItem(`histordle_sched_${type}`, JSON.stringify(s)); }
+
+function getDailyFigure(type, dateStr) {
+  const sched = getSchedule(type);
+  if (sched[dateStr]) {
+    const f = getAllFigures().find(fig => fig.name === sched[dateStr]);
+    if (f) return f;
+  }
+  if (type === 'hard') {
+    // Deterministic from hard pool + custom figures
+    const pool = [...HARD_DAILY_POOL, ...getCustomFigures().map(f => f.name)];
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) & 0xffffffff;
+    const name = pool[Math.abs(hash) % pool.length];
+    return getAllFigures().find(f => f.name === name) || BUILTIN_FIGURES[0];
+  } else {
+    // Easy: full database, deterministic
+    const all = getAllFigures();
+    let hash = 7;
+    for (let i = 0; i < dateStr.length; i++) hash = (hash * 37 + dateStr.charCodeAt(i)) & 0xffffffff;
+    return all[Math.abs(hash) % all.length];
+  }
+}
+
+function getDailyResult(type, dateStr) {
+  try { return JSON.parse(localStorage.getItem(`histordle_daily_${type}_${dateStr}`)); } catch { return null; }
+}
+function saveDailyResult(type, dateStr, data) {
+  localStorage.setItem(`histordle_daily_${type}_${dateStr}`, JSON.stringify(data));
+}
+
+function getStats(type) {
+  try { return JSON.parse(localStorage.getItem(`histordle_stats_${type}`) || '{"streak":0,"best":0,"wins":0,"played":0}'); }
+  catch { return {streak:0,best:0,wins:0,played:0}; }
+}
+function saveStats(type, s) { localStorage.setItem(`histordle_stats_${type}`, JSON.stringify(s)); }
+
+function getFreeStats() {
+  try { return JSON.parse(localStorage.getItem('histordle_stats_free') || '{"wins":0,"played":0}'); }
+  catch { return {wins:0,played:0}; }
+}
+function saveFreeStats(s) { localStorage.setItem('histordle_stats_free', JSON.stringify(s)); }
+
+function updateStreak(type, won) {
+  const stats = getStats(type);
+  if (won) {
+    stats.streak++;
+    stats.best = Math.max(stats.best, stats.streak);
+    stats.wins = (stats.wins||0) + 1;
+  } else {
+    stats.streak = 0;
+  }
+  stats.played = (stats.played||0) + 1;
+  saveStats(type, stats);
+}
+
+function buildShareText(type, dateStr, guessNames, won, maxT) {
+  const fig = getDailyFigure(type, dateStr);
+  const label = type === 'hard' ? '📅 Daily Hard' : '🌿 Daily Easy';
+  const header = `HistoQuest ${label} – ${dateStr}`;
+  const result = won ? `✅ ${guessNames.length}/${maxT}` : `❌ X/${maxT}`;
+  const rows = guessNames.map(name => {
+    const g = getAllFigures().find(f => f.name === name);
+    if (!g) return '???????';
+    return [g.name===fig.name, g.gender===fig.gender, g.country===fig.country,
+            g.century===fig.century, g.occupation===fig.occupation,
+            g.continent===fig.continent, g.religion===fig.religion]
+      .map(c => c ? '🟩' : '⬜').join('');
+  });
+  return `${header}\n${result}\n\n${rows.join('\n')}`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MENU INIT
+// ════════════════════════════════════════════════════════════════════════════
+function initMenu() {
+  const today = todayStr();
+  document.getElementById('chipDH').classList.toggle('show', !!getDailyResult('hard', today));
+  document.getElementById('chipDE').classList.toggle('show', !!getDailyResult('easy', today));
+
+  const sh = getStats('hard'), se = getStats('easy');
+  if (sh.wins > 0 || sh.streak > 0 || se.wins > 0 || se.streak > 0) {
+    document.getElementById('streakRow').style.display = 'flex';
+    document.getElementById('scStrH').textContent = sh.streak;
+    document.getElementById('scBstH').textContent = sh.best;
+    document.getElementById('scStrE').textContent = se.streak;
+    document.getElementById('scBstE').textContent = se.best;
+  }
+}
+initMenu();
+
+// ════════════════════════════════════════════════════════════════════════════
+// DAILY MODE ENTRY
+// ════════════════════════════════════════════════════════════════════════════
+function startDailyMode(type) {
+  activePreset = null;
+  currentDailyType = type;
+  const today  = todayStr();
+  const played = getDailyResult(type, today);
+
+  document.getElementById('modeScreen').style.display   = 'none';
+  document.getElementById('gameScreen').style.display   = 'block';
+  document.getElementById('menuBtn').style.visibility   = 'visible';
+
+  const badge = document.getElementById('modeBadge');
+  if (type === 'hard') { badge.textContent = '📅 Daily Hard'; badge.className = 'mode-badge daily-h'; }
+  else                 { badge.textContent = '🌿 Daily Easy'; badge.className = 'mode-badge daily-e'; }
+
+  const showList = (type === 'easy');
+  document.getElementById('listBtn').style.display      = showList ? '' : 'none';
+  document.getElementById('panelToolbar').style.display = showList ? '' : 'none';
+  document.getElementById('listLockMsg').style.display  = showList ? 'none' : 'block';
+  document.getElementById('panelBody').style.display    = showList ? '' : 'none';
+  document.getElementById('panelCount').style.display   = showList ? '' : 'none';
+
+  if (played) {
+    // Already played — show summary
+    document.getElementById('inputSection').style.display      = 'none';
+    document.getElementById('guessBoard').innerHTML            = '';
+    document.getElementById('colHeader').style.display         = 'none';
+    document.getElementById('resultBanner').style.display      = 'none';
+    document.getElementById('dailyAlreadyPlayed').style.display = 'block';
+
+    const fig = getDailyFigure(type, today);
+    document.getElementById('dapTitle').textContent = type === 'hard' ? '📅 Already played Hard Daily!' : '🌿 Already played Easy Daily!';
+    document.getElementById('dapMsg').textContent   = played.won
+      ? `You guessed ${fig.name} in ${played.guesses.length}/${type==='hard'?7:10} tries! 🏆`
+      : `The answer was: ${fig.name}. Better luck tomorrow!`;
+
+    const shareText = buildShareText(type, today, played.guesses, played.won, type==='hard'?7:10);
+    document.getElementById('dapShareText').textContent = shareText;
+    document.getElementById('dapShareBox').style.display = 'block';
+
+    document.getElementById('triesLeft').textContent       = Math.max(0, (type==='hard'?7:10) - played.guesses.length);
+    document.getElementById('triesUsedDisplay').textContent = `${played.guesses.length} / ${type==='hard'?7:10} used`;
+
+    replayBoard(played.guesses, getDailyFigure(type, today), true);
+    startCountdown();
+    return;
+  }
+
+  // Fresh game
+  currentMode  = `daily-${type}`;
+  maxTries     = type === 'hard' ? 7 : 10;
+  target       = getDailyFigure(type, today);
+  guesses      = [];
+  knownCorrect = {};
+  gameOver     = false;
+  smartFilterOn = false;
+
+  resetToggle();
+  renderGameHeaders();
+  document.getElementById('guessBoard').innerHTML          = '';
+  document.getElementById('resultBanner').style.display    = 'none';
+  document.getElementById('dailyAlreadyPlayed').style.display = 'none';
+  document.getElementById('colHeader').style.display       = '';
+  document.getElementById('inputSection').style.display    = '';
+  document.getElementById('guessBtn').disabled             = false;
+  document.getElementById('guessInput').value              = '';
+  updateTriesDisplay();
+}
+
+function replayBoard(guessNames, fig, showCols) {
+  const board = document.getElementById('guessBoard');
+  board.innerHTML = '';
+  if (showCols) document.getElementById('colHeader').style.display = '';
+  guessNames.forEach(name => {
+    const g = getAllFigures().find(f => f.name === name);
+    if (!g) return;
+    const row = document.createElement('div');
+    row.className = 'guess-row';
+    const nc = document.createElement('div');
+    nc.className = `cell ${g.name === fig.name ? 'correct' : 'wrong'}`;
+    nc.style.setProperty('--i', 0); nc.textContent = g.name;
+    row.appendChild(nc);
+    getCurrentAttrs().forEach((attr, i) => {
+      const c = document.createElement('div');
+      c.className = `cell ${g[attr] === fig[attr] ? 'correct' : 'wrong'}`;
+      c.style.setProperty('--i', i+1); c.textContent = g[attr];
+      row.appendChild(c);
+    });
+    board.appendChild(row);
+  });
+}
+
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  function tick() {
+    const now = new Date(), next = new Date(now);
+    next.setDate(next.getDate()+1); next.setHours(0,0,0,0);
+    const d = next - now;
+    const h = String(Math.floor(d/3600000)).padStart(2,'0');
+    const m = String(Math.floor((d%3600000)/60000)).padStart(2,'0');
+    const s = String(Math.floor((d%60000)/1000)).padStart(2,'0');
+    const el = document.getElementById('countdownDisplay');
+    if (el) el.textContent = `${h}:${m}:${s}`;
+  }
+  tick(); countdownInterval = setInterval(tick, 1000);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FIGURES PANEL
+// ════════════════════════════════════════════════════════════════════════════
+function renderPanel() {
+  const body   = document.getElementById('panelBody');
+  const search = (document.getElementById('panelSearch').value||'').toLowerCase();
+  const count  = document.getElementById('panelCount');
+  body.innerHTML = '';
+  let visible = 0;
+  const custom = getCustomFigures();
+  getAllFigures().forEach(f => {
+    if (search && !f.name.toLowerCase().includes(search)) return;
+    if (smartFilterOn) {
+      let bad = false;
+      for (const [a,v] of Object.entries(knownCorrect)) { if (f[a]!==v){bad=true;break;} }
+      if (!bad && guesses.find(g=>g.name===f.name)) bad = true;
+      if (bad) return;
+    }
+    const isCustom = custom.some(c => c.name === f.name);
+    const card = document.createElement('div');
+    card.className = 'figure-card';
+    card.innerHTML = `<h3>${f.name}${isCustom?'<span class="custom-badge">CUSTOM</span>':''}</h3>
+      <div class="figure-tags">${[f.gender,f.country,f.century,f.occupation,f.continent,f.religion].map(t=>`<span class="tag">${t}</span>`).join('')}</div>`;
+    body.appendChild(card);
+    visible++;
+  });
+  count.textContent = `Showing ${visible} of ${getAllFigures().length} figures`;
+}
+function toggleSmartFilter() {
+  smartFilterOn = !smartFilterOn;
+  document.getElementById('toggleTrack').classList.toggle('on', smartFilterOn);
+  document.getElementById('filterToggle').classList.toggle('on', smartFilterOn);
+  document.getElementById('filterLabel').textContent = smartFilterOn ? 'Hiding impossible figures' : 'Hide impossible figures';
+  renderPanel();
+}
+function openPanel() {
+  document.getElementById('listPanel').classList.add('open');
+  document.getElementById('overlay').classList.add('active');
+  renderPanel();
+}
+function closePanel() {
+  document.getElementById('listPanel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('active');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// GAME FLOW
+// ════════════════════════════════════════════════════════════════════════════
+function renderGameHeaders() {
+  const header = document.getElementById('colHeader');
+  const attrs = getCurrentAttrs();
+  header.innerHTML = `<div class="col-label">Name</div>` + attrs.map(a => `<div class="col-label">${a}</div>`).join('');
+  const cols = attrs.length + 1;
+  document.documentElement.style.setProperty('--gtc', `2.2fr ${'1.2fr '.repeat(cols - 1).trim()}`);
+  document.documentElement.style.setProperty('--gtc-sm', `1.8fr ${'1fr '.repeat(cols - 1).trim()}`);
+}
+
+function resetToggle() {
+  smartFilterOn = false;
+  document.getElementById('toggleTrack').classList.remove('on');
+  document.getElementById('filterToggle').classList.remove('on');
+  document.getElementById('filterLabel').textContent = 'Hide impossible figures';
+}
+
+function startGame(mode) {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  if (mode !== 'custom') activePreset = null;
+  currentMode  = mode;
+  maxTries     = mode === 'hard' ? 5 : 10;
+  const all    = getAllFigures();
+  target       = all[Math.floor(Math.random() * all.length)];
+  guesses      = []; knownCorrect = {}; gameOver = false;
+  currentDailyType = null;
+  resetToggle();
+
+  renderGameHeaders();
+
+  const locked = (mode === 'hard' || mode === 'custom');
+  document.getElementById('listBtn').style.display      = locked ? 'none' : '';
+  document.getElementById('panelToolbar').style.display = locked ? 'none' : '';
+  document.getElementById('listLockMsg').style.display  = locked ? 'block' : 'none';
+  document.getElementById('panelBody').style.display    = locked ? 'none' : '';
+  document.getElementById('panelCount').style.display   = locked ? 'none' : '';
+
+  document.getElementById('modeScreen').style.display   = 'none';
+  document.getElementById('gameScreen').style.display   = 'block';
+  document.getElementById('menuBtn').style.visibility   = 'visible';
+
+  const badge = document.getElementById('modeBadge');
+  if (mode === 'custom') badge.textContent = `✨ ${activePreset.name}`;
+  else badge.textContent = mode === 'easy' ? '🏛️ Easy Mode' : '⚔️ Hard Mode';
+  badge.className   = `mode-badge ${mode}`;
+
+  document.getElementById('guessBoard').innerHTML          = '';
+  document.getElementById('resultBanner').style.display    = 'none';
+  document.getElementById('dailyAlreadyPlayed').style.display = 'none';
+  document.getElementById('colHeader').style.display       = '';
+  document.getElementById('inputSection').style.display    = '';
+  document.getElementById('guessBtn').disabled             = false;
+  document.getElementById('guessInput').value              = '';
+  document.getElementById('panelSearch').value             = '';
+  updateTriesDisplay();
+}
+
+function returnToMenu() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  document.getElementById('modeScreen').style.display  = 'flex';
+  document.getElementById('gameScreen').style.display  = 'none';
+  document.getElementById('menuBtn').style.visibility  = 'hidden';
+  document.getElementById('colHeader').style.display   = '';
+  closeAutocomplete(); closePanel(); initMenu();
+}
+
+function updateTriesDisplay() {
+  const used = guesses.length, left = maxTries - used;
+  document.getElementById('triesLeft').textContent       = left;
+  document.getElementById('triesUsedDisplay').textContent = `${used} / ${maxTries} used`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// AUTOCOMPLETE
+// ════════════════════════════════════════════════════════════════════════════
+function onInputChange() {
+  const val = document.getElementById('guessInput').value.trim().toLowerCase();
+  const box = document.getElementById('autocomplete');
+  acIndex = -1;
+  if (!val) { closeAutocomplete(); return; }
+  const guessedNames = guesses.map(g => g.name.toLowerCase());
+  const matches = getAllFigures().filter(f => f.name.toLowerCase().includes(val) && !guessedNames.includes(f.name.toLowerCase()));
+  if (!matches.length) { closeAutocomplete(); return; }
+  box.innerHTML = '';
+  matches.slice(0, 10).forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.textContent = f.name;
+    item.addEventListener('mousedown', () => selectFigure(f.name));
+    box.appendChild(item);
+  });
+  box.style.display = 'block';
+}
+function onInputKeyDown(e) {
+  const box = document.getElementById('autocomplete');
+  const items = box.querySelectorAll('.autocomplete-item');
+  if (!items.length) { if (e.key==='Enter') submitGuess(); return; }
+  if (e.key==='ArrowDown') { e.preventDefault(); acIndex=Math.min(acIndex+1,items.length-1); items.forEach((el,i)=>el.classList.toggle('active',i===acIndex)); }
+  else if (e.key==='ArrowUp') { e.preventDefault(); acIndex=Math.max(acIndex-1,-1); items.forEach((el,i)=>el.classList.toggle('active',i===acIndex)); }
+  else if (e.key==='Enter') { e.preventDefault(); if(acIndex>=0&&items[acIndex]) selectFigure(items[acIndex].textContent); else submitGuess(); }
+  else if (e.key==='Escape') closeAutocomplete();
+}
+function selectFigure(name) { document.getElementById('guessInput').value = name; closeAutocomplete(); }
+function closeAutocomplete() { const b=document.getElementById('autocomplete'); b.style.display='none'; b.innerHTML=''; acIndex=-1; }
+document.addEventListener('click', e => { if (!e.target.closest('#inputSection')) closeAutocomplete(); });
+
+// ════════════════════════════════════════════════════════════════════════════
+// GUESS LOGIC
+// ════════════════════════════════════════════════════════════════════════════
+function submitGuess() {
+  if (gameOver) return;
+  const inputEl = document.getElementById('guessInput');
+  const raw = inputEl.value.trim();
+  if (!raw) { showToast('Please type a name!'); return; }
+  const figure = getAllFigures().find(f => f.name.toLowerCase() === raw.toLowerCase());
+  if (!figure) { showToast('Unknown figure. Use the autocomplete!'); return; }
+  if (guesses.find(g => g.name.toLowerCase() === figure.name.toLowerCase())) { showToast('Already guessed!'); return; }
+  guesses.push(figure);
+  inputEl.value = '';
+  closeAutocomplete();
+  getCurrentAttrs().forEach(attr => { if (figure[attr] === target[attr]) knownCorrect[attr] = target[attr]; });
+  renderRow(figure);
+  updateTriesDisplay();
+  if (document.getElementById('listPanel').classList.contains('open') && smartFilterOn) renderPanel();
+  if (figure.name === target.name) endGame(true);
+  else if (guesses.length >= maxTries) endGame(false);
+}
+
+function renderRow(figure) {
+  const board = document.getElementById('guessBoard');
+  const row   = document.createElement('div');
+  row.className = 'guess-row';
+  const nc = document.createElement('div');
+  nc.className = `cell ${figure.name===target.name?'correct':'wrong'}`;
+  nc.style.setProperty('--i',0); nc.textContent = figure.name;
+  row.appendChild(nc);
+  getCurrentAttrs().forEach((attr,i) => {
+    const c = document.createElement('div');
+    c.className = `cell ${figure[attr]===target[attr]?'correct':'wrong'}`;
+    c.style.setProperty('--i',i+1); c.textContent = figure[attr];
+    row.appendChild(c);
+  });
+  board.appendChild(row);
+  row.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function endGame(won) {
+  gameOver = true;
+  document.getElementById('inputSection').style.display = 'none';
+  const banner = document.getElementById('resultBanner');
+  banner.style.display = 'block';
+  banner.className = won ? 'win' : 'lose';
+
+  const isDaily = currentMode.startsWith('daily-');
+  if (isDaily) {
+    const today = todayStr();
+    saveDailyResult(currentDailyType, today, { guesses: guesses.map(g=>g.name), won });
+    updateStreak(currentDailyType, won);
+    const shareText = buildShareText(currentDailyType, today, guesses.map(g=>g.name), won, maxTries);
+    document.getElementById('resultShareText').textContent = shareText;
+    document.getElementById('resultShareBox').style.display = 'block';
+    setTimeout(startCountdown, 700);
+  } else {
+    // Track free mode stats
+    const fs = getFreeStats();
+    fs.played = (fs.played||0) + 1;
+    if (won) fs.wins = (fs.wins||0) + 1;
+    saveFreeStats(fs);
+    document.getElementById('resultShareBox').style.display = 'none';
+  }
+
+  const actions = document.getElementById('resultActions');
+  if (isDaily) {
+    actions.innerHTML = `<button class="btn-secondary" onclick="copyShare('result')">📋 Share Result</button>
+      <button class="btn-secondary" onclick="returnToMenu()">← Menu</button>`;
+  } else {
+    actions.innerHTML = `<button class="btn-secondary" onclick="startGame(currentMode)">Play Again</button>
+      <button class="btn-secondary" onclick="returnToMenu()">← Menu</button>`;
+  }
+
+  document.getElementById('resultEmoji').textContent = won ? '🏆' : '💀';
+  document.getElementById('resultTitle').textContent = won ? `Magnificent! You got it in ${guesses.length}!` : 'Defeated! The answer was…';
+  document.getElementById('resultMsg').textContent   = won
+    ? `The answer was ${target.name}. A true historian!`
+    : `${target.name} — ${target.occupation} from ${target.country} (${target.century}).`;
+  setTimeout(() => banner.scrollIntoView({behavior:'smooth',block:'nearest'}), 700);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SHARE
+// ════════════════════════════════════════════════════════════════════════════
+let lastShareType = null;
+function copyShare(src) {
+  const today  = todayStr();
+  let text;
+  if (src === 'already') {
+    const r = getDailyResult(currentDailyType, today);
+    text = r ? buildShareText(currentDailyType, today, r.guesses, r.won, currentDailyType==='hard'?7:10) : '';
+  } else {
+    text = document.getElementById('resultShareText').textContent;
+  }
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => showToast('📋 Copied!')).catch(() => showToast('Copy failed'));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TITLE CLICK → DEV
+// ════════════════════════════════════════════════════════════════════════════
+function titleClick() {
+  titleClickCount++;
+  if (titleClickTimer) clearTimeout(titleClickTimer);
+  if (titleClickCount >= 7) { titleClickCount = 0; openDevModal(); }
+  else titleClickTimer = setTimeout(() => { titleClickCount = 0; }, 2000);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DEV CONSOLE
+// ════════════════════════════════════════════════════════════════════════════
+let devAuthed = false;
+function openDevModal() {
+  document.getElementById('devModal').classList.add('open');
+  if (!devAuthed) {
+    document.getElementById('devAuth').style.display    = 'flex';
+    document.getElementById('devConsole').style.display = 'none';
+    document.getElementById('devAuthInput').value = '';
+    document.getElementById('devAuthError').style.display = 'none';
+    setTimeout(() => document.getElementById('devAuthInput').focus(), 100);
+  } else {
+    devOpenConsole();
+  }
+}
+function closeDevModal() { document.getElementById('devModal').classList.remove('open'); }
+function devLogin() {
+  if (document.getElementById('devAuthInput').value === DEV_PASSWORD) {
+    devAuthed = true;
+    document.getElementById('devAuthError').style.display = 'none';
+    devOpenConsole();
+  } else {
+    document.getElementById('devAuthError').style.display = 'block';
+    document.getElementById('devAuthInput').value = '';
+  }
+}
+function devOpenConsole() {
+  document.getElementById('devAuth').style.display    = 'none';
+  document.getElementById('devConsole').style.display = 'flex';
+  const all = getAllFigures();
+  // Populate datalists
+  const hdl = document.getElementById('hdFigureList');
+  const edl = document.getElementById('edFigureList');
+  const efl = document.getElementById('efFigureList');
+  hdl.innerHTML = edl.innerHTML = efl.innerHTML = all.map(f=>`<option value="${f.name}">`).join('');
+  // Set dates
+  const today = todayStr();
+  document.getElementById('hdDate').value = today;
+  document.getElementById('edDate').value = today;
+  devRefreshAll();
+}
+function devTab(id) {
+  document.querySelectorAll('.dev-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.dev-tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${id}`).classList.add('active');
+  document.getElementById(`tc-${id}`).classList.add('active');
+  if (id === 'manage') devRefreshManage();
+}
+function devRefreshAll() {
+  devRefreshHard(); devRefreshEasy(); devRefreshManage();
+}
+
+// ── Hard daily ──
+function devRefreshHard() {
+  const today = todayStr();
+  const fig   = getDailyFigure('hard', today);
+  const res   = getDailyResult('hard', today);
+  const sched = getSchedule('hard');
+  const src   = sched[today] ? '📌 Scheduled' : '🎲 Deterministic';
+  document.getElementById('devHardTodayInfo').innerHTML =
+    `<strong>${fig.name}</strong> &nbsp;·&nbsp; ${src}<br>
+     ${fig.occupation} · ${fig.country} · ${fig.century}<br>
+     ${res ? (res.won ? `✅ Solved in ${res.guesses.length} guesses` : '❌ Attempted (lost)') : '⏳ Not yet played'}`;
+  devRefreshScheduleList('hard', 'hdScheduleList');
+}
+function devAddHardSchedule() {
+  const date = document.getElementById('hdDate').value;
+  const name = document.getElementById('hdFigure').value.trim();
+  if (!date) { showToast('Pick a date'); return; }
+  const fig = getAllFigures().find(f => f.name.toLowerCase() === name.toLowerCase());
+  if (!fig) { showToast('Unknown figure name'); return; }
+  const s = getSchedule('hard'); s[date] = fig.name; saveSchedule('hard', s);
+  document.getElementById('hdFigure').value = '';
+  devRefreshHard(); showToast(`✅ Hard Daily: ${fig.name} on ${date}`);
+}
+function devHardPickRandom() {
+  const pool = [...HARD_DAILY_POOL, ...getCustomFigures().map(f=>f.name)];
+  document.getElementById('hdFigure').value = pool[Math.floor(Math.random()*pool.length)];
+}
+
+// ── Easy daily ──
+function devRefreshEasy() {
+  const today = todayStr();
+  const fig   = getDailyFigure('easy', today);
+  const res   = getDailyResult('easy', today);
+  const sched = getSchedule('easy');
+  const src   = sched[today] ? '📌 Scheduled' : '🎲 Deterministic';
+  document.getElementById('devEasyTodayInfo').innerHTML =
+    `<strong>${fig.name}</strong> &nbsp;·&nbsp; ${src}<br>
+     ${fig.occupation} · ${fig.country} · ${fig.century}<br>
+     ${res ? (res.won ? `✅ Solved in ${res.guesses.length} guesses` : '❌ Attempted (lost)') : '⏳ Not yet played'}`;
+  devRefreshScheduleList('easy', 'edScheduleList');
+}
+function devAddEasySchedule() {
+  const date = document.getElementById('edDate').value;
+  const name = document.getElementById('edFigure').value.trim();
+  if (!date) { showToast('Pick a date'); return; }
+  const fig = getAllFigures().find(f => f.name.toLowerCase() === name.toLowerCase());
+  if (!fig) { showToast('Unknown figure name'); return; }
+  const s = getSchedule('easy'); s[date] = fig.name; saveSchedule('easy', s);
+  document.getElementById('edFigure').value = '';
+  devRefreshEasy(); showToast(`✅ Easy Daily: ${fig.name} on ${date}`);
+}
+function devEasyPickRandom() {
+  const all = getAllFigures();
+  document.getElementById('edFigure').value = all[Math.floor(Math.random()*all.length)].name;
+}
+
+// ── Shared schedule list renderer ──
+function devRefreshScheduleList(type, listId) {
+  const sched = getSchedule(type), today = todayStr();
+  const list = document.getElementById(listId);
+  list.innerHTML = '';
+  const entries = Object.entries(sched).filter(([d]) => d >= today).sort((a,b) => a[0].localeCompare(b[0]));
+  if (!entries.length) {
+    list.innerHTML = '<p class="dev-info" style="padding:4px 0">No schedules set.</p>';
+    return;
+  }
+  entries.forEach(([date, name]) => {
+    const item = document.createElement('div');
+    item.className = 'dev-schedule-item';
+    item.innerHTML = `<span class="ds-date">${date}</span><span class="ds-name">${name}</span>
+      ${date===today?'<span class="ds-today">TODAY</span>':''}
+      <button class="dev-del-btn" onclick="devRemoveSchedule('${type}','${date}','${listId}')" title="Remove">🗑</button>`;
+    list.appendChild(item);
+  });
+}
+function devRemoveSchedule(type, date, listId) {
+  const s = getSchedule(type); delete s[date]; saveSchedule(type, s);
+  devRefreshScheduleList(type, listId);
+  if (type === 'hard') devRefreshHard(); else devRefreshEasy();
+  showToast(`🗑 Removed ${type} schedule for ${date}`);
+}
+
+// ── Add custom figure ──
+function devAddFigure() {
+  const f = {
+    name:       document.getElementById('nf-name').value.trim(),
+    gender:     document.getElementById('nf-gender').value,
+    country:    document.getElementById('nf-country').value.trim(),
+    century:    document.getElementById('nf-century').value.trim(),
+    occupation: document.getElementById('nf-occupation').value,
+    continent:  document.getElementById('nf-continent').value,
+    religion:   document.getElementById('nf-religion').value.trim(),
+    custom:     true,
+  };
+  if (!f.name || !f.country || !f.century || !f.religion) { showToast('Fill all required fields'); return; }
+  const existing = getAllFigures().find(x => x.name.toLowerCase() === f.name.toLowerCase());
+  if (existing) { showToast('Figure already exists in database'); return; }
+  const arr = getCustomFigures();
+  arr.push(f);
+  saveCustomFigures(arr);
+  devClearNewFigureForm();
+  devRefreshManage();
+  // Update datalists
+  const opt = `<option value="${f.name}">`;
+  document.getElementById('hdFigureList').innerHTML += opt;
+  document.getElementById('edFigureList').innerHTML += opt;
+  showToast(`✅ Added: ${f.name}`);
+}
+function devClearNewFigureForm() {
+  ['nf-name','nf-country','nf-century','nf-religion'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ── Edit Figure ──
+function devLoadFigureToEdit() {
+  const name = document.getElementById('ef-select').value.trim();
+  const fig = getAllFigures().find(f => f.name.toLowerCase() === name.toLowerCase());
+  if (!fig) return;
+  document.getElementById('ef-name').value = fig.name;
+  document.getElementById('ef-gender').value = fig.gender;
+  document.getElementById('ef-occupation').value = fig.occupation;
+  document.getElementById('ef-country').value = fig.country;
+  document.getElementById('ef-century').value = fig.century;
+  document.getElementById('ef-continent').value = fig.continent;
+  document.getElementById('ef-religion').value = fig.religion;
+  document.getElementById('ef-form-grid').style.display = 'grid';
+  document.getElementById('ef-actions').style.display = 'flex';
+}
+function devResetEditForm() {
+  document.getElementById('ef-select').value = '';
+  document.getElementById('ef-form-grid').style.display = 'none';
+  document.getElementById('ef-actions').style.display = 'none';
+}
+function devSaveFigureEdit() {
+  const name = document.getElementById('ef-name').value;
+  const f = {
+    gender:     document.getElementById('ef-gender').value,
+    country:    document.getElementById('ef-country').value.trim(),
+    century:    document.getElementById('ef-century').value.trim(),
+    occupation: document.getElementById('ef-occupation').value,
+    continent:  document.getElementById('ef-continent').value,
+    religion:   document.getElementById('ef-religion').value.trim(),
+  };
+  if (!f.country || !f.century || !f.religion) { showToast('Fill all fields'); return; }
+
+  const customs = getCustomFigures();
+  const cIndex = customs.findIndex(c => c.name === name);
+  if (cIndex >= 0) {
+    customs[cIndex] = { ...customs[cIndex], ...f };
+    saveCustomFigures(customs);
+  } else {
+    const edits = getEditedFigures();
+    edits[name] = f;
+    saveEditedFigures(edits);
+  }
+  devResetEditForm();
+  devRefreshManage();
+  showToast(`✅ Saved changes to ${name}`);
+}
+
+// ── Manage figures ──
+function devRefreshManage() {
+  const all    = getAllFigures();
+  const custom = getCustomFigures();
+  document.getElementById('devManageSummary').innerHTML =
+    `<strong>${all.length}</strong> total figures &nbsp;·&nbsp; <strong>${BUILTIN_FIGURES.length}</strong> built-in &nbsp;·&nbsp; <strong>${custom.length}</strong> custom`;
+  document.getElementById('customFigureCount').textContent = `(${custom.length})`;
+  const list = document.getElementById('devCustomFigList');
+  list.innerHTML = '';
+  document.getElementById('noCustomMsg').style.display = custom.length ? 'none' : 'block';
+  custom.forEach((f, idx) => {
+    const item = document.createElement('div');
+    item.className = 'dev-fig-item';
+    item.innerHTML = `<div style="flex:1"><div class="dev-fig-name">${f.name}</div>
+      <div class="dev-fig-meta">${f.occupation} · ${f.country} · ${f.century} · ${f.continent}</div></div>
+      <button class="dev-del-btn" onclick="devDeleteCustom(${idx})" title="Delete">🗑</button>`;
+    list.appendChild(item);
+  });
+}
+function devDeleteCustom(idx) {
+  const arr = getCustomFigures();
+  const name = arr[idx].name;
+  arr.splice(idx, 1);
+  saveCustomFigures(arr);
+  devRefreshManage();
+  showToast(`🗑 Deleted: ${name}`);
+}
+
+// ── Tools ──
+function devExportFullGame() {
+  fetch(location.href).then(r => r.text()).then(html => {
+    const custom = JSON.stringify(getCustomFigures());
+    const schedEasy = JSON.stringify(getSchedule('easy'));
+    const schedHard = JSON.stringify(getSchedule('hard'));
+    const presets = JSON.stringify(getPresets());
+    const edited = getEditedFigures();
+    
+    let newBuiltIn = BUILTIN_FIGURES.map(f => edited[f.name] ? {...f, ...edited[f.name]} : f);
+    const builtInStr = "[\n  " + newBuiltIn.map(f => JSON.stringify(f)).join(",\n  ") + "\n]";
+
+    let newHtml = html;
+    newHtml = newHtml.replace(/const HC_CUSTOM_FIGURES = \[.*?\];/, `const HC_CUSTOM_FIGURES = ${custom};`);
+    newHtml = newHtml.replace(/const HC_SCHED_EASY = \{.*?\};/, `const HC_SCHED_EASY = ${schedEasy};`);
+    newHtml = newHtml.replace(/const HC_SCHED_HARD = \{.*?\};/, `const HC_SCHED_HARD = ${schedHard};`);
+    newHtml = newHtml.replace(/const HC_PRESETS = \[.*?\];/, `const HC_PRESETS = ${presets};`);
+    newHtml = newHtml.replace(/const BUILTIN_FIGURES = \[\s*\{.*?\}\s*\];/s, `const BUILTIN_FIGURES = ${builtInStr};`);
+
+    const blob = new Blob([newHtml], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'histoquest.html';
+    a.click();
+    showToast('Game Exported! Upload this file.');
+  }).catch((e) => showToast('Failed to export file.'));
+}
+function devResetToday(type) {
+  const today = todayStr();
+  localStorage.removeItem(`histordle_daily_${type}_${today}`);
+  showToast(`🔄 ${type === 'hard' ? 'Hard' : 'Easy'} Daily reset — you can play again!`);
+  initMenu();
+  if (type === 'hard') devRefreshHard(); else devRefreshEasy();
+}
+function devClearCustomFigures() {
+  if (!confirm('Delete all custom figures? This cannot be undone.')) return;
+  saveCustomFigures([]);
+  devRefreshManage();
+  showToast('🗑 All custom figures deleted');
+}
+function devClearAll() {
+  if (!confirm('Wipe ALL HistoQuest data (results, schedules, stats, custom figures)?')) return;
+  Object.keys(localStorage).filter(k => k.startsWith('histordle')).forEach(k => localStorage.removeItem(k));
+  devAuthed = false;
+  closeDevModal();
+  initMenu();
+  showToast('🧹 All data cleared');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// STATS MODAL
+// ════════════════════════════════════════════════════════════════════════════
+function openStatsModal() {
+  populateStats();
+  document.getElementById('statsModal').classList.add('open');
+}
+function closeStatsModal() {
+  document.getElementById('statsModal').classList.remove('open');
+}
+
+function populateStats() {
+  const today = todayStr();
+  const sh = getStats('hard'), se = getStats('easy');
+  const fs = getFreeStats();
+
+  // ── Flame streaks ──
+  const hardPlayedToday = !!getDailyResult('hard', today);
+  const easyPlayedToday = !!getDailyResult('easy', today);
+
+  const flameH = document.getElementById('flameHard');
+  const flameE = document.getElementById('flameEasy');
+
+  flameH.className = 'flame-container ' + (hardPlayedToday ? 'active' : 'inactive');
+  flameE.className = 'flame-container ' + (easyPlayedToday ? 'active' : 'inactive');
+
+  document.getElementById('flameHardNum').textContent  = sh.streak || 0;
+  document.getElementById('flameEasyNum').textContent  = se.streak || 0;
+  document.getElementById('flameHardBest').textContent = `Best: ${sh.best || 0}`;
+  document.getElementById('flameEasyBest').textContent = `Best: ${se.best || 0}`;
+
+  const hardStatusEl = document.getElementById('flameHardStatus');
+  const easyStatusEl = document.getElementById('flameEasyStatus');
+
+  if (hardPlayedToday) {
+    hardStatusEl.textContent = '● Streak active today!';
+    hardStatusEl.style.color = 'var(--green)';
+  } else {
+    hardStatusEl.textContent = '● Play today to keep it alive';
+    hardStatusEl.style.color = 'var(--text-dim)';
+  }
+  if (easyPlayedToday) {
+    easyStatusEl.textContent = '● Streak active today!';
+    easyStatusEl.style.color = 'var(--green)';
+  } else {
+    easyStatusEl.textContent = '● Play today to keep it alive';
+    easyStatusEl.style.color = 'var(--text-dim)';
+  }
+
+  // ── Win / played counts ──
+  document.getElementById('statHardWins').textContent   = sh.wins   || 0;
+  document.getElementById('statEasyWins').textContent   = se.wins   || 0;
+  document.getElementById('statHardPlayed').textContent = sh.played || 0;
+  document.getElementById('statEasyPlayed').textContent = se.played || 0;
+  document.getElementById('statFreeWins').textContent   = fs.wins   || 0;
+  document.getElementById('statFreePlayed').textContent = fs.played || 0;
+
+  // ── Accuracy bars ──
+  function pct(wins, played) {
+    if (!played) return null;
+    return Math.round((wins / played) * 100);
+  }
+  const hp = pct(sh.wins||0, sh.played||0);
+  const ep = pct(se.wins||0, se.played||0);
+  const fp = pct(fs.wins||0, fs.played||0);
+  const totalWins   = (sh.wins||0) + (se.wins||0) + (fs.wins||0);
+  const totalPlayed = (sh.played||0) + (se.played||0) + (fs.played||0);
+  const op = pct(totalWins, totalPlayed);
+
+  function setBar(barId, pctId, val) {
+    document.getElementById(barId).style.width   = val !== null ? val + '%' : '0%';
+    document.getElementById(pctId).textContent   = val !== null ? val + '%' : '—';
+  }
+  // Delay so animation plays when modal opens
+  setTimeout(() => {
+    setBar('accHardBar',    'accHardPct',    hp);
+    setBar('accEasyBar',    'accEasyPct',    ep);
+    setBar('accFreeBar',    'accFreePct',    fp);
+    setBar('accOverallBar', 'accOverallPct', op);
+  }, 80);
+}
+
+// Close on backdrop click
+document.getElementById('statsModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('statsModal')) closeStatsModal();
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// SHARE STATS
+// ════════════════════════════════════════════════════════════════════════════
+function toggleShareOpts() {
+  document.getElementById('shareOptsPanel').classList.toggle('show');
+}
+
+// ── Helper: round-rect path ──
+function canvasRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+// ── Download stats image (pure Canvas, no libraries) ──
+function downloadStatsImage() {
+  const today = todayStr();
+  const sh = getStats('hard'), se = getStats('easy'), fs = getFreeStats();
+  const hardToday = !!getDailyResult('hard', today);
+  const easyToday = !!getDailyResult('easy', today);
+
+  const W = 580, H = 520;
+  const canvas = document.createElement('canvas');
+  canvas.width = W * 2; canvas.height = H * 2; // hi-DPI
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // Background
+  ctx.fillStyle = '#0b0c14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Radial glow
+  const glow = ctx.createRadialGradient(W*.22, H*.12, 0, W*.22, H*.12, W*.65);
+  glow.addColorStop(0, 'rgba(124,106,247,.18)'); glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+  const glow2 = ctx.createRadialGradient(W*.8, H*.85, 0, W*.8, H*.85, W*.55);
+  glow2.addColorStop(0, 'rgba(167,139,250,.1)'); glow2.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow2; ctx.fillRect(0, 0, W, H);
+
+  // Border card
+  ctx.strokeStyle = '#2a2d45'; ctx.lineWidth = 1.5;
+  canvasRoundRect(ctx, 8, 8, W-16, H-16, 18); ctx.stroke();
+
+  // ── Title ──
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#c4b5fd';
+  ctx.font = 'bold 26px serif';
+  ctx.fillText('HISTOQUEST', W/2, 50);
+  ctx.font = '12px sans-serif'; ctx.fillStyle = '#9094b8';
+  ctx.fillText('My Statistics  ·  ' + today, W/2, 68);
+
+  // Divider
+  ctx.strokeStyle = '#2a2d45'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(36, 80); ctx.lineTo(W-36, 80); ctx.stroke();
+
+  // ── Streak section label ──
+  ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#9094b8';
+  ctx.fillText('🔥  CURRENT STREAKS', W/2, 100);
+
+  // Draw flame cards
+  function drawFlameBlock(cx, cy, streak, best, label, active) {
+    const bg   = active ? 'rgba(255,106,0,0.12)' : 'rgba(42,21,64,0.55)';
+    const bord = active ? 'rgba(255,106,0,0.4)'  : 'rgba(124,106,247,0.22)';
+    const numC = active ? '#fff7e6' : '#a78bfa';
+    const bw = 120, bh = 96;
+    ctx.fillStyle = bg;
+    canvasRoundRect(ctx, cx-bw/2, cy-bh/2, bw, bh, 12); ctx.fill();
+    ctx.strokeStyle = bord; ctx.lineWidth = 1;
+    canvasRoundRect(ctx, cx-bw/2, cy-bh/2, bw, bh, 12); ctx.stroke();
+
+    // Flame emoji layer (simulated with gradient circle)
+    const fGrad = ctx.createRadialGradient(cx, cy-12, 4, cx, cy-12, 26);
+    if (active) {
+      fGrad.addColorStop(0, '#ffd200'); fGrad.addColorStop(0.5, '#ff6a00'); fGrad.addColorStop(1, 'rgba(238,9,121,0)');
+    } else {
+      fGrad.addColorStop(0, '#3d2060'); fGrad.addColorStop(0.5, '#2a1540'); fGrad.addColorStop(1, 'transparent');
+    }
+    ctx.fillStyle = fGrad;
+    ctx.beginPath(); ctx.ellipse(cx, cy-10, 22, 28, 0, 0, Math.PI*2); ctx.fill();
+
+    // Streak number
+    ctx.font = 'bold 32px sans-serif'; ctx.fillStyle = numC; ctx.textAlign = 'center';
+    if (active) ctx.shadowColor = '#ff6a00', ctx.shadowBlur = 12;
+    ctx.fillText(streak, cx, cy+4);
+    ctx.shadowBlur = 0;
+
+    // Labels
+    ctx.font = '10px sans-serif'; ctx.fillStyle = '#9094b8';
+    ctx.fillText(label, cx, cy+22);
+    ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#f0c040';
+    ctx.fillText('Best: ' + best, cx, cy+36);
+  }
+  drawFlameBlock(W/4, 158, sh.streak||0, sh.best||0, '📅 Daily Hard', hardToday);
+  drawFlameBlock(W*3/4, 158, se.streak||0, se.best||0, '🌿 Daily Easy', easyToday);
+
+  // Divider
+  ctx.strokeStyle = '#2a2d45'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(36, 214); ctx.lineTo(W-36, 214); ctx.stroke();
+
+  // ── Wins ──
+  ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#9094b8'; ctx.textAlign = 'center';
+  ctx.fillText('🏆  ALL-TIME WINS', W/2, 234);
+  const winRows = [
+    {x:W/6,   val:sh.wins||0,  lab:'Hard Wins',   col:'#f0c040'},
+    {x:W/2,   val:se.wins||0,  lab:'Easy Wins',   col:'#22c55e'},
+    {x:W*5/6, val:fs.wins||0,  lab:'Free Wins',   col:'#a78bfa'},
+  ];
+  winRows.forEach(d => {
+    // tile
+    ctx.fillStyle = '#13141f';
+    canvasRoundRect(ctx, d.x-46, 246, 92, 58, 10); ctx.fill();
+    ctx.strokeStyle = '#2a2d45'; ctx.lineWidth = 1;
+    canvasRoundRect(ctx, d.x-46, 246, 92, 58, 10); ctx.stroke();
+    ctx.font = 'bold 28px sans-serif'; ctx.fillStyle = d.col; ctx.textAlign = 'center';
+    ctx.fillText(d.val, d.x, 280);
+    ctx.font = '9px sans-serif'; ctx.fillStyle = '#9094b8';
+    ctx.fillText(d.lab, d.x, 296);
+  });
+
+  // Divider
+  ctx.strokeStyle = '#2a2d45'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(36, 318); ctx.lineTo(W-36, 318); ctx.stroke();
+
+  // ── Accuracy ──
+  ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#9094b8'; ctx.textAlign = 'center';
+  ctx.fillText('🎯  ACCURACY', W/2, 338);
+
+  const accRows = [
+    {label:'Daily Hard', wins:sh.wins||0, played:sh.played||0, c1:'#f0c040', c2:'#f97316'},
+    {label:'Daily Easy', wins:se.wins||0, played:se.played||0, c1:'#22c55e', c2:'#34d399'},
+    {label:'Free Mode',  wins:fs.wins||0, played:fs.played||0, c1:'#7c6af7', c2:'#a78bfa'},
+  ];
+  const bX = 170, bW = W - bX - 72;
+  accRows.forEach((d, i) => {
+    const y = 356 + i * 32;
+    const p = d.played ? Math.round((d.wins/d.played)*100) : 0;
+    ctx.textAlign = 'left'; ctx.font = '11px sans-serif'; ctx.fillStyle = '#9094b8';
+    ctx.fillText(d.label, 40, y+8);
+    // bar bg
+    ctx.fillStyle = '#1a1c2e';
+    canvasRoundRect(ctx, bX, y, bW, 8, 4); ctx.fill();
+    // bar fill
+    if (p > 0) {
+      const bg = ctx.createLinearGradient(bX, y, bX+bW, y);
+      bg.addColorStop(0, d.c1); bg.addColorStop(1, d.c2);
+      ctx.fillStyle = bg;
+      canvasRoundRect(ctx, bX, y, bW*(p/100), 8, 4); ctx.fill();
+    }
+    ctx.textAlign = 'right'; ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = '#e8e9f3';
+    ctx.fillText(d.played ? p+'%' : '—', W-36, y+8);
+  });
+
+  // Overall accuracy
+  const totW = (sh.wins||0)+(se.wins||0)+(fs.wins||0);
+  const totP = (sh.played||0)+(se.played||0)+(fs.played||0);
+  const ovPct = totP ? Math.round((totW/totP)*100) : null;
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#a78bfa';
+  ctx.fillText('Overall: ' + (ovPct !== null ? ovPct+'%' : '—'), W/2, 462);
+
+  // Footer
+  ctx.font = '10px sans-serif'; ctx.fillStyle = '#4a4d6a';
+  ctx.fillText('histoquest – ' + today, W/2, 478);
+  ctx.fillText('questions@histoquest.com', W/2, 492);
+
+  // Trigger download
+  const a = document.createElement('a');
+  a.download = 'histoquest-stats-' + today + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  showToast('💾 Stats image saved!');
+}
+
+// ── Copy shareable link ──
+function copyStatsLink() {
+  const today = todayStr();
+  const sh = getStats('hard'), se = getStats('easy'), fs = getFreeStats();
+  const payload = {
+    v: 1, date: today,
+    hard: { streak: sh.streak||0, best: sh.best||0, wins: sh.wins||0, played: sh.played||0, playedToday: !!getDailyResult('hard', today) },
+    easy: { streak: se.streak||0, best: se.best||0, wins: se.wins||0, played: se.played||0, playedToday: !!getDailyResult('easy', today) },
+    free: { wins: fs.wins||0, played: fs.played||0 },
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const base = window.location.href.split('#')[0];
+  const link = base + '#share=' + encoded;
+  navigator.clipboard.writeText(link)
+    .then(() => showToast('🔗 Shareable link copied!'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = link; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); showToast('🔗 Link copied!'); } catch{}
+      document.body.removeChild(ta);
+    });
+}
+
+// ── Shared stats view (URL hash decode) ──
+function checkSharedStats() {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#share=')) return;
+  try {
+    const raw = decodeURIComponent(escape(atob(hash.slice(7))));
+    const data = JSON.parse(raw);
+    if (data.v !== 1) return;
+    // Clear hash without reload
+    history.replaceState(null, '', window.location.pathname);
+    buildSharedStatsModal(data);
+  } catch(e) { console.warn('HistoQuest: invalid share link', e); }
+}
+
+function buildSharedStatsModal(data) {
+  const hardActive = data.hard.playedToday;
+  const easyActive = data.easy.playedToday;
+  function acc(w, p) { return p ? Math.round((w/p)*100)+'%' : '—'; }
+  function bar(pn) { return p => p ? Math.round((p.wins/p.played)*100) : 0; }
+  const totW = data.hard.wins + data.easy.wins + data.free.wins;
+  const totP = data.hard.played + data.easy.played + data.free.played;
+  const ovPct = totP ? Math.round((totW/totP)*100)+'%' : '—';
+
+  function flameCard(label, streak, best, active) {
+    const bg = active ? 'rgba(255,106,0,0.1)' : 'rgba(42,21,64,0.55)';
+    const bd = active ? 'rgba(255,106,0,0.38)' : 'rgba(124,106,247,0.2)';
+    const nc = active ? '#fff7e6' : '#a78bfa';
+    const ns = active ? 'text-shadow:0 0 16px #ff6a00,0 0 30px #ffd200' : 'text-shadow:0 0 10px rgba(124,106,247,.4)';
+    const em = active ? '🔥' : '🌑';
+    return `<div style="background:${bg};border:1px solid ${bd};border-radius:14px;padding:18px 22px;text-align:center;min-width:128px">
+      <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9094b8;margin-bottom:6px">${label}</div>
+      <div style="font-size:2rem;opacity:${active?1:.32}">${em}</div>
+      <div style="font-size:2.6rem;font-weight:800;${ns};color:${nc};line-height:1;margin-top:4px">${streak}</div>
+      <div style="font-size:.6rem;color:#9094b8;margin-top:2px">day streak</div>
+      <div style="font-size:.68rem;font-weight:700;color:#f0c040;margin-top:5px">Best: ${best}</div>
+    </div>`;
+  }
+  function tile(val, label, color) {
+    return `<div style="background:#1a1c2e;border:1px solid #2a2d45;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:1.7rem;font-weight:800;color:${color};line-height:1">${val}</div>
+      <div style="font-size:.6rem;color:#9094b8;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:4px">${label}</div>
+    </div>`;
+  }
+  function barRow(label, wins, played, c1, c2) {
+    const pct = played ? Math.round((wins/played)*100) : 0;
+    const str = played ? pct+'%' : '—';
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="font-size:.74rem;color:#9094b8;font-weight:600;min-width:82px">${label}</div>
+      <div style="flex:1;height:7px;background:#1a1c2e;border-radius:999px;overflow:hidden;border:1px solid #2a2d45">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${c1},${c2});border-radius:999px"></div></div>
+      <div style="font-size:.78rem;font-weight:700;min-width:32px;text-align:right;color:#e8e9f3">${str}</div>
+    </div>`;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'sharedOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(8px)';
+  overlay.innerHTML = `
+    <div style="background:#13141f;border:1px solid #2a2d45;border-radius:20px;width:min(620px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 30px 90px rgba(0,0,0,.8);animation:fadeUp .35s ease;font-family:'Outfit',sans-serif">
+      <div style="padding:20px 26px 14px;border-bottom:1px solid #2a2d45;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,#f0c040,#f97316,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px">📊 Shared Stats</div>
+          <div style="font-size:.7rem;color:#9094b8;margin-top:4px">Shared on ${data.date}</div>
+        </div>
+        <button id="sharedClose" style="background:none;border:none;color:#9094b8;font-size:1.3rem;cursor:pointer;padding:4px">✕</button>
+      </div>
+      <div style="padding:24px 26px 28px;display:flex;flex-direction:column;gap:22px">
+        <div>
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9094b8;margin-bottom:14px">🔥 Current Streaks</div>
+          <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+            ${flameCard('📅 Daily Hard', data.hard.streak, data.hard.best, hardActive)}
+            ${flameCard('🌿 Daily Easy', data.easy.streak, data.easy.best, easyActive)}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9094b8;margin-bottom:12px">🏆 All-Time Wins</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            ${tile(data.hard.wins, 'Hard Wins', '#f0c040')}
+            ${tile(data.easy.wins, 'Easy Wins', '#22c55e')}
+            ${tile(data.free.wins, 'Free Wins', '#a78bfa')}
+            ${tile(data.hard.played, 'Hard Played', '#e8e9f3')}
+            ${tile(data.easy.played, 'Easy Played', '#e8e9f3')}
+            ${tile(data.free.played, 'Free Played', '#e8e9f3')}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9094b8;margin-bottom:12px">🎯 Win Accuracy</div>
+          ${barRow('Daily Hard', data.hard.wins, data.hard.played, '#f0c040','#f97316')}
+          ${barRow('Daily Easy', data.easy.wins, data.easy.played, '#22c55e','#34d399')}
+          ${barRow('Free Mode',  data.free.wins,  data.free.played,  '#7c6af7','#a78bfa')}
+          <div style="margin-top:8px;padding-top:10px;border-top:1px solid #2a2d45;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:.82rem;font-weight:700;color:#e8e9f3">Overall</span>
+            <span style="font-size:1.1rem;font-weight:800;color:#a78bfa">${ovPct}</span>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <button id="sharedBack" style="background:#1a1c2e;border:1px solid #2a2d45;color:#9094b8;border-radius:8px;padding:10px 26px;font-family:'Outfit',sans-serif;font-size:.86rem;cursor:pointer;transition:all .2s">← Back to Game</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  function closeShared() { overlay.remove(); }
+  document.getElementById('sharedClose').addEventListener('click', closeShared);
+  document.getElementById('sharedBack').addEventListener('click', closeShared);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeShared(); });
+}
+
+// Run on load
+checkSharedStats();
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// Keyboard support
+['easyCard','hardCard','dailyECard','dailyHCard'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (id === 'easyCard')   startGame('easy');
+    if (id === 'hardCard')   startGame('hard');
+    if (id === 'dailyECard') startDailyMode('easy');
+    if (id === 'dailyHCard') startDailyMode('hard');
+  });
+});
+document.getElementById('devModal').addEventListener('click', e => { if (e.target === document.getElementById('devModal')) closeDevModal(); });
+</script>
+</body>
+</html>
