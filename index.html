@@ -848,7 +848,7 @@
     </div>
 
     <div class="input-section" id="inputSection">
-      <label>Type a historical figure's name:</label>
+      <label id="inputLabel">Type a historical figure's name:</label>
       <div class="input-row">
         <div style="position:relative;flex:1">
           <input type="text" id="guessInput" placeholder="e.g. Julius Caesar…" autocomplete="off"
@@ -1082,7 +1082,8 @@ function renderPresetList() {
       const el = document.createElement('div');
       el.className = 'dev-fig-item';
       el.innerHTML = `
-        <div class="dev-fig-name">${p.name} <span style="font-size:.7rem;font-weight:400;color:var(--text-dim)">(${p.figures.length} figures)</span></div>
+        <div class="dev-fig-name" style="flex:1">${p.name} <span style="font-size:.7rem;font-weight:400;color:var(--text-dim)">(${p.figures.length} figures)</span></div>
+        <button class="dev-btn" onclick="sharePreset('${p.id}')">📤 Share</button>
         <button class="dev-btn green" onclick="playPreset('${p.id}')">▶ Play</button>
         <button class="dev-btn danger" onclick="deletePreset('${p.id}')">Delete</button>
       `;
@@ -1103,6 +1104,46 @@ function deletePreset(id) {
   const p = getPresets().filter(x => x.id !== id);
   savePresets(p);
   renderPresetList();
+}
+
+function sharePreset(id) {
+  const p = getPresets().find(x => x.id === id);
+  if (!p) return;
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(p))));
+  const base = window.location.href.split('#')[0];
+  const link = base + '#preset=' + encoded;
+  
+  navigator.clipboard.writeText(link)
+    .then(() => showToast('🔗 Preset link copied!'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = link; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); showToast('🔗 Preset link copied!'); } catch{}
+      document.body.removeChild(ta);
+    });
+}
+
+function checkSharedPreset() {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#preset=')) return;
+  try {
+    const raw = decodeURIComponent(escape(atob(hash.slice(8))));
+    const data = JSON.parse(raw);
+    if (!data.id || !data.name || !data.categories || !data.figures) return;
+    
+    // Clear hash
+    history.replaceState(null, '', window.location.pathname);
+    
+    if (confirm(`Someone shared a custom game preset with you: "${data.name}" (${data.figures.length} figures).\n\nDo you want to save and play it?`)) {
+      const presets = getPresets();
+      if (!presets.find(p => p.id === data.id)) {
+        presets.push(data);
+        savePresets(presets);
+      }
+      activePreset = data;
+      startGame('custom');
+    }
+  } catch(e) { console.warn('HistoQuest: invalid preset link', e); }
 }
 
 let cbCats = [];
@@ -1369,6 +1410,14 @@ function startDailyMode(type) {
   document.getElementById('inputSection').style.display    = '';
   document.getElementById('guessBtn').disabled             = false;
   document.getElementById('guessInput').value              = '';
+  
+  const inputLabel = document.getElementById('inputLabel');
+  const guessInput = document.getElementById('guessInput');
+  if(inputLabel) inputLabel.style.display = 'block';
+  const all = getAllFigures();
+  const randomFig = all[Math.floor(Math.random() * all.length)];
+  guessInput.placeholder = 'e.g. ' + randomFig.name + '…';
+  
   updateTriesDisplay();
 }
 
@@ -1511,6 +1560,18 @@ function startGame(mode) {
   document.getElementById('guessBtn').disabled             = false;
   document.getElementById('guessInput').value              = '';
   document.getElementById('panelSearch').value             = '';
+  
+  const inputLabel = document.getElementById('inputLabel');
+  const guessInput = document.getElementById('guessInput');
+  if (mode === 'custom') {
+    if(inputLabel) inputLabel.style.display = 'none';
+    guessInput.placeholder = 'Type a name…';
+  } else {
+    if(inputLabel) inputLabel.style.display = 'block';
+    const randomFig = all[Math.floor(Math.random() * all.length)];
+    guessInput.placeholder = 'e.g. ' + randomFig.name + '…';
+  }
+  
   updateTriesDisplay();
 }
 
@@ -2357,6 +2418,7 @@ function buildSharedStatsModal(data) {
 
 // Run on load
 checkSharedStats();
+checkSharedPreset();
 
 // ════════════════════════════════════════════════════════════════════════════
 // TOAST
